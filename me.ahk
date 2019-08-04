@@ -40,6 +40,7 @@ Activate(t,p)
   Run %p%
   return
 }
+
 SetSystemCursor(str)
 {
     ;替换标准的箭头
@@ -56,6 +57,7 @@ RestoreCursors()
     SPI_SETCURSORS := 0x57
     DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
 }
+
 Space & a::
     if GetKeyState("Ctrl", "P")
         Send ^{Home}
@@ -74,7 +76,8 @@ Space & f::MouseClick,WheelUp,,,1
 Space & d::MouseClick,WheelDown,,,1
 Space & c::
     ControlGetFocus, mw_control, A
-    SendMessage, 0x114, 0, 0, %mw_control%, A
+    Loop 2
+        SendMessage, 0x114, 0, 0, %mw_control%, A
 ;    if !GetKeyState("Shift")
 ;        Send {Shift down}
 ;    Loop
@@ -93,7 +96,8 @@ Space & c::
     return
 Space & v::
     ControlGetFocus, mw_control, A
-    SendMessage, 0x114, 1, 0, %mw_control%, A
+    Loop 2
+        SendMessage, 0x114, 1, 0, %mw_control%, A
 ;    if !GetKeyState("Shift")
 ;        Send {Shift down}
 ;    Loop
@@ -375,17 +379,12 @@ Appskey & l::
     }
     return
 <#Space::Send <#+{t}
-Appskey & Space::
-    Send ^``
-    sleep 10
-    Send {LShift}
-    sleep 300
-    return
-; 输入法
-<^Space::
-    Send ^``
-    sleep 300
-    return
+
+; ------------------   输入法 start  -------------------
+Appskey & Space::PostMessage, 0x50, 0, 0x4090409,, A
+<^Space::PostMessage, 0x50, 0, 0xe0200804,, A
+; ------------------   输入法 end    -------------------
+
 ; 窗口布局
 Space & q::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
@@ -628,14 +627,9 @@ Appskey & o::
 ;CapsLock 映射成Esc
 $CapsLock::
     SetCapsLockState, AlwaysOff
-    Send, {ESC}
-    
+    SendInput {blind}{ESC}
     ;百度输入法切成英文
-    Send ^``
-    sleep 10
-    Send {LShift}
-
-    sleep 300
+    PostMessage, 0x50, 0, 0x4090409,, A
     return
 ; 改变Capslock 状态
 Space & 1::
