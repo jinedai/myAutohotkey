@@ -20,6 +20,7 @@ SetTitleMatchMode 2
 ; DetectHiddenWindows,on
 ; 禁掉CapsLock键
 SetCapsLockState, AlwaysOff
+; 禁用左Win键
 LWin::return
 <+Space::return
 ;functions
@@ -385,9 +386,19 @@ Appskey & Space::
     Send ^``
     sleep 300
     return
-Space & q::Send #{left}
-Space & o::Send #{right}
-Space & g::Send #{up}
+; 窗口布局
+Space & q::
+    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
+    winmove,%title_ActiveWindow%,, 0, 0, A_ScreenWidth/2, A_ScreenHeight
+    return
+Space & o::
+    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
+    winmove,%title_ActiveWindow%,, A_ScreenWidth/2, 0, A_ScreenWidth/2, A_ScreenHeight
+    return
+Space & g::
+    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
+    winmove,%title_ActiveWindow%,, 0, 0, A_ScreenWidth, A_ScreenHeight
+    return
 Space & b::Send #{down}
 ; 窗口移动
 ; 上
@@ -395,7 +406,7 @@ Space & b::Send #{down}
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_y:=var_y-60
     ifWinActive ahk_class CabinetWClass
-{
+    {
         var_x:=var_x - 8
         var_y:=var_y - 74
     }
@@ -458,17 +469,31 @@ Appskey & m::
     SendEvent {Blind}{RButton up}
 return
 Space & i::
+    if GetKeyState("Alt", "P")
+    {
+        sendInput {Raw}=>
+    }
+    else
+    {
+        sendInput {Blind}{Raw}`$
+    }
+
+    sleep 300
+    return
+Appskey & b::
     if GetKeyState("Shift")
     {
         Send {Shift up}
         RestoreCursors()
     }
-    else{
+    else
+    {
         Send {Shift down}
         SetSystemCursor("busy_l.cur")
     }
     sleep 300
     return
+; 将Ctrl键设置为按下状态
 Appskey & g::
     if GetKeyState("Ctrl")
     {
