@@ -1,3 +1,4 @@
+#SingleInstance, force
 Loop, %0%  ; For each parameter:
 {
     param := %A_Index%  ; Fetch the contents of the variable whose name is contained in A_Index.
@@ -24,22 +25,6 @@ SetCapsLockState, AlwaysOff
 LWin::return
 <+Space::return
 ;functions
-Activate(t,p)
-{
-  IfWinActive ahk_class %t%
-  {
-    return
-  }
-  SetTitleMatchMode 2   
-  IfWinExist ahk_class %t%
-  {
-    WinShow
-    WinActivate           
-    return
-  }
-  Run %p%
-  return
-}
 
 SetSystemCursor(str)
 {
@@ -76,43 +61,55 @@ Space & f::MouseClick,WheelUp,,,1
 Space & d::MouseClick,WheelDown,,,1
 Space & c::
     ControlGetFocus, mw_control, A
-    Loop 2
-        SendMessage, 0x114, 0, 0, %mw_control%, A
-;    if !GetKeyState("Shift")
-;        Send {Shift down}
-;    Loop
-;    {
-;        Sleep, 20
-;        cState  := GetKeyState("C", "P")
-;        spState := GetKeyState("Space", "P")
-;        if !cState || !spState
-;        {
-;            Send {Shift up}
-;            break
-;        }
-;        MouseClick,WheelUp,,,1
-;    }
-;    Sleep, 300
+    if ErrorLevel
+    {
+        if !GetKeyState("Shift")
+            Send {Shift down}
+        Loop
+        {
+            Sleep, 20
+            cState  := GetKeyState("C", "P")
+            spState := GetKeyState("Space", "P")
+            if !cState || !spState
+            {
+                Send {Shift up}
+                break
+            }
+            MouseClick,WheelUp,,,1
+        }
+        Sleep, 300
+    }
+    else
+    {
+        Loop 2
+            SendMessage, 0x114, 0, 0, %mw_control%, A
+    }
     return
 Space & v::
     ControlGetFocus, mw_control, A
-    Loop 2
-        SendMessage, 0x114, 1, 0, %mw_control%, A
-;    if !GetKeyState("Shift")
-;        Send {Shift down}
-;    Loop
-;    {
-;        Sleep, 50
-;        cState  := GetKeyState("V", "P")
-;        spState := GetKeyState("Space", "P")
-;        if !cState || !spState
-;        {
-;            Send {Shift up}
-;            break
-;        }
-;        MouseClick,WheelDown,,,1
-;    }
-;    Sleep, 300
+    if ErrorLevel
+    {
+        if !GetKeyState("Shift")
+            Send {Shift down}
+        Loop
+        {
+            Sleep, 50
+            cState  := GetKeyState("V", "P")
+            spState := GetKeyState("Space", "P")
+            if !cState || !spState
+            {
+                Send {Shift up}
+                break
+            }
+            MouseClick,WheelDown,,,1
+        }
+        Sleep, 300
+    }
+    else
+    {
+        Loop 2
+            SendMessage, 0x114, 1, 0, %mw_control%, A
+    }
     return
 ; 使当前窗口处于最前
 Space & 3::WinSet, AlwaysOnTop, Toggle, A
@@ -180,10 +177,19 @@ Space & x::
     RestoreCursors()
     return
 Space & t::Send ^{t}
-Space & n::Send {Backspace}
+Space & n::
+    if GetKeyState("Ctrl", "P")
+    {
+        Send +{home}{Backspace}
+    }
+    else
+    {
+        Send {Backspace}
+    }
+    return
 Space & m::
     if GetKeyState("Ctrl", "P")
-        Send +{Delete}
+        Send +{end}{Delete}
     else
         Send {Delete}
     return
@@ -387,17 +393,16 @@ Appskey & Space::PostMessage, 0x50, 0, 0x4090409,, A
 
 ; 窗口布局
 Space & q::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    winmove,%title_ActiveWindow%,, 0, 0, A_ScreenWidth/2, A_ScreenHeight
+    Send #{left}
+    MouseMove a_screenwidth/4, a_screenheight/2
+    SendInput {click}
     return
 Space & o::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    winmove,%title_ActiveWindow%,, A_ScreenWidth/2, 0, A_ScreenWidth/2, A_ScreenHeight
+    Send #{right}
+    MouseMove a_screenwidth*3/4, a_screenheight/2
+    SendInput {click}
     return
-Space & g::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    winmove,%title_ActiveWindow%,, 0, 0, A_ScreenWidth, A_ScreenHeight
-    return
+Space & g::Send #{up}
 Space & b::Send #{down}
 ; 窗口移动
 ; 上
@@ -468,16 +473,26 @@ Appskey & m::
     SendEvent {Blind}{RButton up}
 return
 Space & i::
-    if GetKeyState("Alt", "P")
+    if  pressesCount>0
     {
-        sendInput {Raw}=>
+        pressesCount+=1
+        return
     }
     else
     {
         sendInput {Blind}{Raw}`$
+        pressesCount=1
     }
-
-    sleep 300
+    SetTimer,WaitKeys,300
+    return
+WaitKeys:
+    SetTimer,WaitKeys,off
+    if pressesCount=2
+    {
+        SendInput {Backspace}
+        sendInput {Raw}=>
+    }
+    pressesCount=0
     return
 Appskey & b::
     if GetKeyState("Shift")
@@ -663,6 +678,52 @@ Appskey & 9::send <!{9}
 
 
 ; 应用
+Activate(t,p)
+{
+    WinGet, count, Count, ahk_class %t%
+    if count > 1
+    {
+        global winProcess, currentWin := t
+        if (winProcess > 0) 
+        {
+            winProcess += 1
+            return
+        }
+        winProcess := 1
+        SetTimer, changeWin, -400
+    }
+    else
+    {
+        IfWinActive ahk_class %t%
+        {
+          return
+        }
+        SetTitleMatchMode 2   
+        IfWinExist ahk_class %t%
+        {
+          WinShow
+          WinActivate           
+          return
+        }
+        Run %p%
+    }
+    return
+}
+changeWin:
+    WinGet, id, List, ahk_class %currentWin%
+;    Loop, %id%
+;    {
+        this_id := id%winProcess%
+        WinActivate, ahk_id %this_id%
+        winProcess := 0
+;        WinGetClass, this_class, ahk_id %this_id%
+;        WinGetTitle, this_title, ahk_id %this_id%
+;        MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %this_id%`nahk_class %this_class%`n%this_title%`n`nContinue?
+;        IfMsgBox, NO, break
+;    }
+    return
+
+
 CapsLock & h::Activate("Chrome_WidgetWin_1","chrome")
 CapsLock & j::Activate("SunAwtFrame","D:\PhpStorm 2019.1\bin\phpstorm64.exe")
 CapsLock & k::Activate("TNavicatMainForm","D:\Navicat Premium\navicat.exe")
