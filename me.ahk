@@ -1,4 +1,3 @@
-#SingleInstance, force
 Loop, %0%  ; For each parameter:
 {
     param := %A_Index%  ; Fetch the contents of the variable whose name is contained in A_Index.
@@ -15,6 +14,7 @@ if not A_IsAdmin
 }
 ;init
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+#SingleInstance, force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
@@ -25,7 +25,6 @@ SetCapsLockState, AlwaysOff
 LWin::return
 <+Space::return
 ;functions
-
 SetSystemCursor(str)
 {
     ;替换标准的箭头
@@ -60,57 +59,30 @@ Space & `;::Send {Enter}
 Space & f::MouseClick,WheelUp,,,1
 Space & d::MouseClick,WheelDown,,,1
 Space & c::
-    ControlGetFocus, mw_control, A
-    if ErrorLevel
+    IfWinActive ahk_class TNavicatMainForm
     {
-        if !GetKeyState("Shift")
-            Send {Shift down}
-        Loop
-        {
-            Sleep, 20
-            cState  := GetKeyState("C", "P")
-            spState := GetKeyState("Space", "P")
-            if !cState || !spState
-            {
-                Send {Shift up}
-                break
-            }
-            MouseClick,WheelUp,,,1
-        }
-        Sleep, 300
+        ControlGetFocus, mw_control, A
+        SendMessage, 0x114, 0, 0, %mw_control%, A
     }
     else
     {
-        Loop 2
-            SendMessage, 0x114, 0, 0, %mw_control%, A
+        sendInput {blind}+{WheelUp}
+        Send {Shift up}
     }
     return
 Space & v::
-    ControlGetFocus, mw_control, A
-    if ErrorLevel
+    IfWinActive ahk_class TNavicatMainForm
     {
-        if !GetKeyState("Shift")
-            Send {Shift down}
-        Loop
-        {
-            Sleep, 50
-            cState  := GetKeyState("V", "P")
-            spState := GetKeyState("Space", "P")
-            if !cState || !spState
-            {
-                Send {Shift up}
-                break
-            }
-            MouseClick,WheelDown,,,1
-        }
-        Sleep, 300
+        ControlGetFocus, mw_control, A
+        SendMessage, 0x114, 1, 0, %mw_control%, A
     }
     else
     {
-        Loop 2
-            SendMessage, 0x114, 1, 0, %mw_control%, A
+        sendInput {blind}+{WheelDown}
+        Send {Shift up}
     }
     return
+
 ; 使当前窗口处于最前
 Space & 3::WinSet, AlwaysOnTop, Toggle, A
 ; 回退键
@@ -386,22 +358,9 @@ Appskey & l::
     return
 <#Space::Send <#+{t}
 
-; ------------------   输入法 start  -------------------
-Appskey & Space::PostMessage, 0x50, 0, 0x4090409,, A
-<^Space::PostMessage, 0x50, 0, 0xe0200804,, A
-; ------------------   输入法 end    -------------------
-
 ; 窗口布局
-Space & q::
-    Send #{left}
-    MouseMove a_screenwidth/4, a_screenheight/2
-    SendInput {click}
-    return
-Space & o::
-    Send #{right}
-    MouseMove a_screenwidth*3/4, a_screenheight/2
-    SendInput {click}
-    return
+Space & q::Send #{left}
+Space & o::Send #{right}
 Space & g::Send #{up}
 Space & b::Send #{down}
 ; 窗口移动
@@ -471,7 +430,8 @@ Appskey & m::
     SendEvent {Blind}{RButton down}
     ;KeyWait n; Prevents keyboard auto-repeat from repeating the mouse click.
     SendEvent {Blind}{RButton up}
-return
+    return
+
 Space & i::
     if  pressesCount>0
     {
@@ -494,7 +454,8 @@ WaitKeys:
     }
     pressesCount=0
     return
-Appskey & b::
+
+Appskey & f::
     if GetKeyState("Shift")
     {
         Send {Shift up}
@@ -642,9 +603,11 @@ Appskey & o::
 ;CapsLock 映射成Esc
 $CapsLock::
     SetCapsLockState, AlwaysOff
-    SendInput {blind}{ESC}
-    ;百度输入法切成英文
-    PostMessage, 0x50, 0, 0x4090409,, A
+    SendInput {ESC}
+
+    ;百度输入法切成英文输入状态
+    IME_SET(0)  
+
     return
 ; 改变Capslock 状态
 Space & 1::
@@ -677,6 +640,43 @@ Appskey & 8::send <!{8}
 Appskey & 9::send <!{9}
 
 
+; ------------------   输入法 start  -------------------
+IME_SET(setSts, WinTitle="")
+{
+    Send ^``
+    ifEqual WinTitle,,  SetEnv,WinTitle,A
+    WinGet,hWnd,ID,%WinTitle%
+    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
+    ;Message : WM_IME_CONTROL  wParam:IMC_SETOPENSTATUS
+    DetectSave := A_DetectHiddenWindows
+    DetectHiddenWindows,ON
+    SendMessage 0x283, 0x006,setSts,,ahk_id %DefaultIMEWnd%
+    DetectHiddenWindows,%DetectSave%
+    Return ErrorLevel
+}
+
+
+IME_GET(WinTitle="")
+{
+    ifEqual WinTitle,,  SetEnv,WinTitle,A
+    WinGet,hWnd,ID,%WinTitle%
+    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
+    ;Message : WM_IME_CONTROL  wParam:IMC_GETOPENSTATUS
+    DetectSave := A_DetectHiddenWindows
+    DetectHiddenWindows,ON
+    SendMessage 0x283, 0x005,0,,ahk_id %DefaultIMEWnd%
+    DetectHiddenWindows,%DetectSave%
+    Return ErrorLevel
+}
+
+Appskey & Space::
+    IME_SET(0)  
+    return
+<^Space::
+    IME_SET(1)  
+;    PostMessage, 0x50, 0, E0210804,, A
+    return
+; ------------------   输入法 end    -------------------
 ; 应用
 Activate(t,p)
 {
@@ -684,7 +684,7 @@ Activate(t,p)
     if count > 1
     {
         global winProcess, currentWin := t
-        if (winProcess > 0) 
+        if (winProcess > 0)
         {
             winProcess += 1
             return
@@ -723,21 +723,21 @@ changeWin:
 ;    }
     return
 
-
 CapsLock & h::Activate("Chrome_WidgetWin_1","chrome")
 CapsLock & j::Activate("SunAwtFrame","D:\PhpStorm 2019.1\bin\phpstorm64.exe")
 CapsLock & k::Activate("TNavicatMainForm","D:\Navicat Premium\navicat.exe")
 ;CapsLock & !k::Activate("TMainForm","D:\heidisql\heidisql.exe")
-CapsLock & l::Activate("YXMainFrame","C:\Program Files (x86)\Yinxiang Biji\印象笔记\Evernote.exe")
+CapsLock & l::Activate("YXMainFrame","D:\Yinxiang Biji\Evernote.exe")
+CapsLock & p::Activate("Microsoft-Windows-Tablet-SnipperEditor","c:\Windows\System32\SnippingTool.exe")
 CapsLock & `;::Activate("CabinetWClass", "C:\Windows\explorer.exe")
-CapsLock & n::Activate("EVERYTHING", "C:\Program Files\Everything\Everything.exe")
+CapsLock & n::Activate("EVERYTHING", "everything")
 CapsLock & m::Activate("Vim","gvim")
-CapsLock & y::Activate("Qt5QWindowIcon","d:\VirtualBox\VirtualBox.exe")
-CapsLock & u::Activate("WindowsForms10.Window.8.app.0.141b42a_r10_ad1","d:\Fiddler\Fiddler.exe")
-;CapsLock & o::Activate("HwndWrapper[AxureRP.exe;;a346c183-6bcd-4041-9886-11ded0117eb9]", "D:\Axure\AxureRPProPortable\AxureRP.exe")
+;CapsLock & u::Activate("WindowsForms10.Window.8.app.0.141b42a_r10_ad1","d:\Fiddler\Fiddler.exe")
+CapsLock & u::Activate("XLMAIN","excel")
+CapsLock & o::Activate("OpusApp", "word")
 ;CapsLock & p::Activate("WeChatMainWndForPC", "D:\Tencent\WeChat\WeChatWeb.exe")
-#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
-;CapsLock & i::Activate("AcrobatSDIWindow","C:\Program Files (x86)\Adobe\Reader 11.0\Reader\AcroRd32.exe")
-;CapsLock & u::Activate("OpusApp","C:\Program Files (x86)\Microsoft Office\Office14\WINWORD.EXE")
-;CapsLock & o::Activate("HwndWrapper[AxureRP.exe;;a346c183-6bcd-4041-9886-11ded0117eb9]", "D:\Axure\AxureRPProPortable\AxureRP.exe")
-;CapsLock & p::Activate("WeChatMainWndForPC", "D:\Tencent\WeChat\WeChatWeb.exe")
+;#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
+;CapsLock & o::Activate("TFoxMainFrm.UnicodeClass", "C:\Foxmail 7.2\Foxmail.exe")
+CapsLock & y::Activate("Qt5QWindowIcon", "D:\VirtualBox\VirtualBox.exe")
+
+
