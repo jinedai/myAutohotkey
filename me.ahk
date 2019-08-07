@@ -1,4 +1,3 @@
-#SingleInstance, force
 Loop, %0%  ; For each parameter:
 {
     param := %A_Index%  ; Fetch the contents of the variable whose name is contained in A_Index.
@@ -9,30 +8,30 @@ if not A_IsAdmin
 {
     If A_IsCompiled
        DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_ScriptFullPath, str, params , str, A_WorkingDir, int, 3)
-    Else
+    Else                     
        DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_AhkPath, str, """" . A_ScriptFullPath . """" . A_Space . params, str, A_WorkingDir, int, 1)
     ExitApp
 }
 ;init
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+#SingleInstance, force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
 ; DetectHiddenWindows,on
-; ½ûµôCapsLock¼ü
+; ç¦æ‰CapsLocké”®
 SetCapsLockState, AlwaysOff
-; ½ûÓÃ×óWin¼ü
+; ç¦ç”¨å·¦Winé”®
 LWin::return
 <+Space::return
-;functions
-
+; ------------------------------------------- functions start ----------------------------------
 SetSystemCursor(str)
 {
-    ;Ìæ»»±ê×¼µÄ¼ıÍ·
+    ;æ›¿æ¢æ ‡å‡†çš„ç®­å¤´
     IDC_ARROW:=32512
     hCursor  := DllCall("LoadCursorFromFile", "Str", "C:\Windows\Cursors\" . str)
     DllCall("SetSystemCursor", "UInt", hCursor, "Int", IDC_ARROW)
-    ;Ìæ»»"I"ĞÍ¹â±ê
+    ;æ›¿æ¢"I"å‹å…‰æ ‡
     IDC_IBEAM:=32513
     hCursor  := DllCall("LoadCursorFromFile", "Str", "C:\Windows\Cursors\" . str)
     DllCall("SetSystemCursor", "UInt", hCursor, "Int", IDC_IBEAM)
@@ -42,7 +41,41 @@ RestoreCursors()
     SPI_SETCURSORS := 0x57
     DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
 }
+sendbyclip(var_string)
+{
+    ClipboardOld = %ClipboardAll%
+    Clipboard =%var_string%
+    sleep 10
+    send ^v
+    sleep 10
+    Clipboard = %ClipboardOld%Â  
+}
+; -------------------------------------------- functions end ------------------------------------
 
+Space & i::
+    if pressesCount>0
+    {
+        pressesCount+=1
+        return
+    }
+    else
+    {
+        sendbyclip("`$")
+        ;sendInput {Blind}{Raw}`$
+        pressesCount=1
+    }
+    SetTimer,WaitKeys,300
+    return
+WaitKeys:
+    SetTimer,WaitKeys,off
+    if pressesCount > 1
+    {
+        SendInput {Backspace}
+        sendbyclip("=>")
+        ;sendInput {Raw}=>
+    }
+    pressesCount=0
+    return
 Space & a::
     if GetKeyState("Ctrl", "P")
         Send ^{Home}
@@ -56,66 +89,39 @@ Space & s::
         Send {End}
     return
 Space & `;::Send {Enter}
-; ¿ØÖÆ¹öÂÖÉÏÏÂ×óÓÒ¹ö¶¯
+; æ§åˆ¶æ»šè½®ä¸Šä¸‹å·¦å³æ»šåŠ¨
 Space & f::MouseClick,WheelUp,,,1
 Space & d::MouseClick,WheelDown,,,1
 Space & c::
-    ControlGetFocus, mw_control, A
-    if ErrorLevel
+    IfWinActive ahk_class TNavicatMainForm
     {
-        if !GetKeyState("Shift")
-            Send {Shift down}
-        Loop
-        {
-            Sleep, 20
-            cState  := GetKeyState("C", "P")
-            spState := GetKeyState("Space", "P")
-            if !cState || !spState
-            {
-                Send {Shift up}
-                break
-            }
-            MouseClick,WheelUp,,,1
-        }
-        Sleep, 300
+        ControlGetFocus, mw_control, A
+        SendMessage, 0x114, 0, 0, %mw_control%, A
     }
     else
     {
-        Loop 2
-            SendMessage, 0x114, 0, 0, %mw_control%, A
+        sendInput {blind}+{WheelUp}
+        Send {Shift up}
     }
     return
 Space & v::
-    ControlGetFocus, mw_control, A
-    if ErrorLevel
+    IfWinActive ahk_class TNavicatMainForm
     {
-        if !GetKeyState("Shift")
-            Send {Shift down}
-        Loop
-        {
-            Sleep, 50
-            cState  := GetKeyState("V", "P")
-            spState := GetKeyState("Space", "P")
-            if !cState || !spState
-            {
-                Send {Shift up}
-                break
-            }
-            MouseClick,WheelDown,,,1
-        }
-        Sleep, 300
+        ControlGetFocus, mw_control, A
+        SendMessage, 0x114, 1, 0, %mw_control%, A
     }
     else
     {
-        Loop 2
-            SendMessage, 0x114, 1, 0, %mw_control%, A
+        sendInput {blind}+{WheelDown}
+        Send {Shift up}
     }
     return
-; Ê¹µ±Ç°´°¿Ú´¦ÓÚ×îÇ°
+
+; ä½¿å½“å‰çª—å£å¤„äºæœ€å‰
 Space & 3::WinSet, AlwaysOnTop, Toggle, A
-; »ØÍË¼ü
+; å›é€€é”®
 Space & u::Send ^{z}
-; ¸´ÖÆ
+; å¤åˆ¶
 Space & y::
     if GetKeyState("Shift")
     {
@@ -134,7 +140,7 @@ Space & y::
     sleep 1000
     RestoreCursors()
     return
-; Õ³Ìù    
+; ç²˜è´´    
 Space & p::
     IfWinActive ahk_class mintty
     {
@@ -165,7 +171,7 @@ Space & w::
     Send {Shift up}
     Send {Ctrl up}
     return
-;¹Ø±ÕºÍÌí¼Ó±êÇ©Ò³
+;å…³é—­å’Œæ·»åŠ æ ‡ç­¾é¡µ
 Space & z::Send ^{w}
 Space & x::
     if shiftFlag = 1
@@ -193,12 +199,12 @@ Space & m::
     else
         Send {Delete}
     return
-;·½Ïò¼ü
+;æ–¹å‘é”®
 Space & j:: Send {down}
 Space & l:: Send {right}
 Space & h:: Send {left}
 Space & k:: Send {up}
-;Ó³ÉäCtrl + R
+;æ˜ å°„Ctrl + R
 Space & r::
     Send {Ctrl down}
     sleep 10
@@ -207,13 +213,13 @@ Space & r::
     sleep 10
     Send {Ctrl up}
     return
-; Ó³Éä F5
+; æ˜ å°„ F5
 Space & 5:: Send {F5}
-;¹Ø±Õ´°¿Ú
+;å…³é—­çª—å£
 Space & 4:: Send !{F4}
-; ÇĞ»»¼ò·±Ìå
+; åˆ‡æ¢ç®€ç¹ä½“
 Space & 2:: Send +{Space}
-; ¿ØÖÆ´°¿ÚµÄÍ¸Ã÷¶È
+; æ§åˆ¶çª—å£çš„é€æ˜åº¦
 Space & 6::
     WinGet, Transparent, Transparent, A
     if Transparent = 150
@@ -228,7 +234,7 @@ $Appskey::SendInput {Appskey}
 x_posFlag := 0
 y_posFlag := 0
 Appskey & `;::
-    ;»ñÈ¡Êó±êÏà¶ÔÓÚ´°¿ÚµÄÎ»ÖÃ
+    ;è·å–é¼ æ ‡ç›¸å¯¹äºçª—å£çš„ä½ç½®
     WinGetPos,var_x_1,var_y_1,,,A
     if GetKeyState("Ctrl", "P")
     {
@@ -386,26 +392,8 @@ Appskey & l::
     return
 <#Space::Send <#+{t}
 
-; ------------------   ÊäÈë·¨ start  -------------------
-Appskey & Space::PostMessage, 0x50, 0, 0x4090409,, A
-<^Space::PostMessage, 0x50, 0, 0xe0200804,, A
-; ------------------   ÊäÈë·¨ end    -------------------
-
-; ´°¿Ú²¼¾Ö
-Space & q::
-    Send #{left}
-    MouseMove a_screenwidth/4, a_screenheight/2
-    SendInput {click}
-    return
-Space & o::
-    Send #{right}
-    MouseMove a_screenwidth*3/4, a_screenheight/2
-    SendInput {click}
-    return
-Space & g::Send #{up}
-Space & b::Send #{down}
-; ´°¿ÚÒÆ¶¯
-; ÉÏ
+; çª—å£ç§»åŠ¨
+; ä¸Š
 <^+!k::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_y:=var_y-60
@@ -416,7 +404,7 @@ Space & b::Send #{down}
     }
     winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
-; ×ó
+; å·¦
 <^+!h::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_x:=var_x-60
@@ -426,7 +414,7 @@ Space & b::Send #{down}
     }
     winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
-; ÓÒ
+; å³
 <^+!l::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_x:=var_x+60
@@ -436,7 +424,7 @@ Space & b::Send #{down}
     }
     winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
-; ÏÂ
+; ä¸‹
 <^+!j::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_y:=var_y+60
@@ -447,21 +435,21 @@ Space & b::Send #{down}
     }
     winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
-; ´°¿Úµ÷´ó
+; çª—å£è°ƒå¤§
 CapsLock & =::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_width:=var_width+10
     var_height:=var_height+10
     winmove,%title_ActiveWindow%,,%var_x%,%var_y%, %var_width%, %var_height%
     return
-; ´°¿Úµ÷Ğ¡
+; çª—å£è°ƒå°
 CapsLock & -::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
     var_width:=var_width-10
     var_height:=var_height-10
     winmove,%title_ActiveWindow%,,%var_x%,%var_y%, %var_width%, %var_height%
     return
-;Êó±ê
+;é¼ æ ‡
 Appskey & n::
     SendEvent {Blind}{LButton down}
     ;KeyWait n; Prevents keyboard auto-repeat from repeating the mouse click.
@@ -471,30 +459,10 @@ Appskey & m::
     SendEvent {Blind}{RButton down}
     ;KeyWait n; Prevents keyboard auto-repeat from repeating the mouse click.
     SendEvent {Blind}{RButton up}
-return
-Space & i::
-    if  pressesCount>0
-    {
-        pressesCount+=1
-        return
-    }
-    else
-    {
-        sendInput {Blind}{Raw}`$
-        pressesCount=1
-    }
-    SetTimer,WaitKeys,300
     return
-WaitKeys:
-    SetTimer,WaitKeys,off
-    if pressesCount=2
-    {
-        SendInput {Backspace}
-        sendInput {Raw}=>
-    }
-    pressesCount=0
-    return
-Appskey & b::
+
+
+Appskey & f::
     if GetKeyState("Shift")
     {
         Send {Shift up}
@@ -507,7 +475,7 @@ Appskey & b::
     }
     sleep 300
     return
-; ½«Ctrl¼üÉèÖÃÎª°´ÏÂ×´Ì¬
+; å°†Ctrlé”®è®¾ç½®ä¸ºæŒ‰ä¸‹çŠ¶æ€
 Appskey & g::
     if GetKeyState("Ctrl")
     {
@@ -520,11 +488,11 @@ Appskey & g::
     }
     sleep 300
     return
-;    GetKeyState Ã»´ø²ÎÊıP»òT, ÔòÎªÂß¼­×´Ì¬£¬·ñÔòÎªÎïÀí×´Ì¬
+;    GetKeyState æ²¡å¸¦å‚æ•°Pæˆ–T, åˆ™ä¸ºé€»è¾‘çŠ¶æ€ï¼Œå¦åˆ™ä¸ºç‰©ç†çŠ¶æ€
 ;    GetKeyState, state, Lshift, P
-;    µ¯³öÏûÏ¢
+;    å¼¹å‡ºæ¶ˆæ¯
 ;    msgBox %state%
-;Êó±ê
+;é¼ æ ‡
 Appskey & ,::
     GetKeyState, state, LButton
     if state = U
@@ -639,25 +607,27 @@ Appskey & o::
     }
     MouseMove %var_x%,%var_y%
     return
-;CapsLock Ó³Éä³ÉEsc
+;CapsLock æ˜ å°„æˆEsc
 $CapsLock::
     SetCapsLockState, AlwaysOff
-    SendInput {blind}{ESC}
-    ;°Ù¶ÈÊäÈë·¨ÇĞ³ÉÓ¢ÎÄ
-    PostMessage, 0x50, 0, 0x4090409,, A
+    SendInput {ESC}
+
+    ;ç™¾åº¦è¾“å…¥æ³•åˆ‡æˆè‹±æ–‡è¾“å…¥çŠ¶æ€
+    IME_SET(0)  
+
     return
-; ¸Ä±äCapslock ×´Ì¬
+; æ”¹å˜Capslock çŠ¶æ€
 Space & 1::
     if GetKeyState("Capslock", "T")
         SetCapsLockState,off
     else
         SetCapsLockState,on
     return
-;ÒôÁ¿¿ØÖÆ
+;éŸ³é‡æ§åˆ¶
 <#F11::Send {Volume_Up 1}
 ; Raise the master volume by 1 interval (typically 5%).
 <#F12::Send {Volume_Down 3}
-; Lower the master volume by 3 intervals.ÕâÀïÈç¹û²»¼Ó²ÎÊıµÄ»°¾ÍÊÇÄ¬ÈÏ5
+; Lower the master volume by 3 intervals.è¿™é‡Œå¦‚æœä¸åŠ å‚æ•°çš„è¯å°±æ˜¯é»˜è®¤5
 <#F10::Send {Volume_Mute}
 Appskey & [::
     if GetKeyState("Ctrl", "P")
@@ -677,7 +647,59 @@ Appskey & 8::send <!{8}
 Appskey & 9::send <!{9}
 
 
-; Ó¦ÓÃ
+; ------------------   è¾“å…¥æ³• start  -------------------
+IME_SET(setSts, WinTitle="")
+{
+    Send ^``
+    ifEqual WinTitle,,  SetEnv,WinTitle,A
+    WinGet,hWnd,ID,%WinTitle%
+    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
+    ;Message : WM_IME_CONTROL  wParam:IMC_SETOPENSTATUS
+    DetectSave := A_DetectHiddenWindows
+    DetectHiddenWindows,ON
+    SendMessage 0x283, 0x006,setSts,,ahk_id %DefaultIMEWnd%
+    DetectHiddenWindows,%DetectSave%
+    Return ErrorLevel
+}
+
+
+IME_GET(WinTitle="")
+{
+    ifEqual WinTitle,,  SetEnv,WinTitle,A
+    WinGet,hWnd,ID,%WinTitle%
+    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
+    ;Message : WM_IME_CONTROL  wParam:IMC_GETOPENSTATUS
+    DetectSave := A_DetectHiddenWindows
+    DetectHiddenWindows,ON
+    SendMessage 0x283, 0x005,0,,ahk_id %DefaultIMEWnd%
+    DetectHiddenWindows,%DetectSave%
+    Return ErrorLevel
+}
+
+Appskey & Space::
+    IME_SET(0)  
+    return
+<^Space::
+    IME_SET(1)  
+;    PostMessage, 0x50, 0, E0210804,, A
+    return
+; ------------------   è¾“å…¥æ³• end    -------------------
+
+; çª—å£å¸ƒå±€
+Space & q::
+    Send #{left}
+    MouseMove a_screenwidth/4, a_screenheight/2
+    SendInput {click}
+    return
+Space & o::
+    Send #{right}
+    MouseMove a_screenwidth*3/4, a_screenheight/2
+    SendInput {click}
+    return
+Space & g::Send #{up}
+Space & b::Send #{down}
+
+; åº”ç”¨
 Activate(t,p)
 {
     WinGet, count, Count, ahk_class %t%
@@ -728,7 +750,7 @@ CapsLock & h::Activate("Chrome_WidgetWin_1","chrome")
 CapsLock & j::Activate("SunAwtFrame","D:\PhpStorm 2019.1\bin\phpstorm64.exe")
 CapsLock & k::Activate("TNavicatMainForm","D:\Navicat Premium\navicat.exe")
 ;CapsLock & !k::Activate("TMainForm","D:\heidisql\heidisql.exe")
-CapsLock & l::Activate("YXMainFrame","C:\Program Files (x86)\Yinxiang Biji\Ó¡Ïó±Ê¼Ç\Evernote.exe")
+CapsLock & l::Activate("YXMainFrame","C:\Program Files (x86)\Yinxiang Biji\å°è±¡ç¬”è®°\Evernote.exe")
 CapsLock & `;::Activate("CabinetWClass", "C:\Windows\explorer.exe")
 CapsLock & n::Activate("EVERYTHING", "C:\Program Files\Everything\Everything.exe")
 CapsLock & m::Activate("Vim","gvim")
@@ -741,3 +763,23 @@ CapsLock & u::Activate("WindowsForms10.Window.8.app.0.141b42a_r10_ad1","d:\Fiddl
 ;CapsLock & u::Activate("OpusApp","C:\Program Files (x86)\Microsoft Office\Office14\WINWORD.EXE")
 ;CapsLock & o::Activate("HwndWrapper[AxureRP.exe;;a346c183-6bcd-4041-9886-11ded0117eb9]", "D:\Axure\AxureRPProPortable\AxureRP.exe")
 ;CapsLock & p::Activate("WeChatMainWndForPC", "D:\Tencent\WeChat\WeChatWeb.exe")
+
+ï¼›åˆ‡æ¢è¾“å…¥æ³•ï¼ˆå®æµ‹ä¸è¡Œéœ€è¦æ”¹è¿›ï¼‰
+ï¼›SwitchIME(name)
+ï¼›{
+ï¼›    Loop, HKLM, SYSTEM/CurrentControlSet/Control/Keyboard Layouts,1,1
+ï¼›    {
+ï¼›    IfEqual,A_LoopRegName,Layout Text
+ï¼›    {
+ï¼›    RegRead,Value
+ï¼›    IfInString,value,%name%
+ï¼›    {
+ï¼›    RegExMatch(A_LoopRegSubKey,"[^//]+$",dwLayout)
+ï¼›    HKL:=DllCall("LoadKeyboardLayout", Str, dwLayout, UInt, 1)
+ï¼›    ControlGetFocus,ctl,A
+ï¼›    SendMessage,0x50,0,HKL,%ctl%,A
+ï¼›    Break
+ï¼›    }
+ï¼›    }
+ï¼›    }
+ï¼›}
