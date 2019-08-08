@@ -8,18 +8,19 @@ if not A_IsAdmin
 {
     If A_IsCompiled
        DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_ScriptFullPath, str, params , str, A_WorkingDir, int, 3)
-    Else
+    Else                     
        DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_AhkPath, str, """" . A_ScriptFullPath . """" . A_Space . params, str, A_WorkingDir, int, 1)
     ExitApp
 }
 ;init
+
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 #SingleInstance, force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
 ; DetectHiddenWindows,on
-; ½ûµôCapsLock¼ü
+; ½ûµôCapsLock¼ü;
 SetCapsLockState, AlwaysOff
 ; ½ûÓÃ×óWin¼ü
 LWin::return
