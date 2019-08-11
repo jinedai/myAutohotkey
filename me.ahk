@@ -14,7 +14,7 @@ if not A_IsAdmin
 }
 ;init
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
-#SingleInstance, force
+#SingleInstance force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
@@ -24,6 +24,9 @@ SetCapsLockState, AlwaysOff
 ; 禁用左Win键
 LWin::return
 <+Space::return
+
+
+
 ; ------------------------------------------- functions start ----------------------------------
 SetSystemCursor(str)
 {
@@ -227,7 +230,6 @@ Space & 6::
     else
         WinSet,Transparent,150,A
     return
-+Space::Send +{Space}
 
 $Space::SendInput {Space}
 $Appskey::SendInput {Appskey}
@@ -684,6 +686,44 @@ Appskey & Space::
 ;    PostMessage, 0x50, 0, E0210804,, A
     return
 ; ------------------   输入法 end    -------------------
+; 将Ctrl键设置为按下状态
+Space & ,::
+    Keywait, `,, , t0.1
+    if errorlevel = 1
+    {
+        if GetKeyState("Shift")
+        {
+            Send {Shift up}
+            RestoreCursors()
+        }
+        else
+        {
+            Send {Shift down}
+            SetSystemCursor("busy_l.cur")
+        }
+    }
+    else
+    {
+        Keywait, `,, d, t0.2
+        if errorlevel = 0
+        {
+            if GetKeyState("Shift")
+            {
+                Send {Shift up}
+            }
+            if GetKeyState("Ctrl")
+            {
+                Send {Ctrl up}
+                RestoreCursors()
+            }
+            else
+            {
+                Send {Ctrl down}
+                SetSystemCursor("aero_link_xl.cur")
+            }
+        }
+    }
+    return
 
 ; 窗口布局
 Space & q::
@@ -763,23 +803,3 @@ CapsLock & u::Activate("WindowsForms10.Window.8.app.0.141b42a_r10_ad1","d:\Fiddl
 ;CapsLock & u::Activate("OpusApp","C:\Program Files (x86)\Microsoft Office\Office14\WINWORD.EXE")
 ;CapsLock & o::Activate("HwndWrapper[AxureRP.exe;;a346c183-6bcd-4041-9886-11ded0117eb9]", "D:\Axure\AxureRPProPortable\AxureRP.exe")
 ;CapsLock & p::Activate("WeChatMainWndForPC", "D:\Tencent\WeChat\WeChatWeb.exe")
-
-；切换输入法（实测不行需要改进）
-；SwitchIME(name)
-；{
-；    Loop, HKLM, SYSTEM/CurrentControlSet/Control/Keyboard Layouts,1,1
-；    {
-；    IfEqual,A_LoopRegName,Layout Text
-；    {
-；    RegRead,Value
-；    IfInString,value,%name%
-；    {
-；    RegExMatch(A_LoopRegSubKey,"[^//]+$",dwLayout)
-；    HKL:=DllCall("LoadKeyboardLayout", Str, dwLayout, UInt, 1)
-；    ControlGetFocus,ctl,A
-；    SendMessage,0x50,0,HKL,%ctl%,A
-；    Break
-；    }
-；    }
-；    }
-；}
