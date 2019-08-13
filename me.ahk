@@ -264,37 +264,26 @@ Appskey & i::
     }
     return
 Appskey & y::
-    Loop
+    WinGetPos,var_rx,var_ry,var_width,var_height,A
+    if GetKeyState("Ctrl", "P")
     {
-        cState  := GetKeyState("Y", "P")
-        spState := GetKeyState("Appskey", "P")
-        if !cState || !spState
+        if GetKeyState("Shift", "P")
         {
-            break
-        }
-        WinGetPos,var_rx,var_ry,var_width,var_height,A
-        if GetKeyState("Ctrl", "P")
-        {
-            if GetKeyState("Shift", "P")
-            {
-                var_x:=50
-                var_y:=50
-            }
-            else
-            {
-                var_x := var_width / 4
-                var_y := var_height /4
-            }
-            MouseMove %var_x%,%var_y%
-            break
+            var_x:=-var_rx+40
+            var_y:=-var_ry+40
         }
         else
         {
-            var_v := 15
-            var_y := 15 * var_height / var_width
+            var_x := 50
+            var_y := 50
         }
-        MouseMove, -%var_v%, -%var_y%, 0, R
     }
+    else
+    {
+        var_x := var_width / 4
+        var_y := var_height /4
+    }
+    MouseMove %var_x%,%var_y%
     return
 Appskey & u::
     WinGetPos,var_rx,var_ry,var_width,var_height,A
@@ -391,8 +380,6 @@ Appskey & `;::
             x_posflag := 1
         }
     }
-    return
-Appskey & '::
     return
 ;Control The Mouse
 Appskey & k::
