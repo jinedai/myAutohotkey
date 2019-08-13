@@ -235,6 +235,133 @@ $Space::SendInput {Space}
 $Appskey::SendInput {Appskey}
 x_posFlag := 0
 y_posFlag := 0
+
+; -----------------------------------------------------------------------------------  鼠标控制 start  -----------------------------------------------------------
+Appskey & ,::
+    GetKeyState, state, LButton
+    if state = U
+    {
+        SendEvent {Click down}
+        SetSystemCursor("beam_rl.cur")
+    }
+    else
+    {
+        SendEvent {Click up}
+        RestoreCursors()
+    }
+    return
+Appskey & i::
+    WinGetPos,var_x_1,var_y_1,var_width,var_height,A
+    if GetKeyState("Ctrl", "P")
+    {
+        MouseMove a_screenwidth/2-var_x_1,a_screenheight/2-var_y_1
+    }
+    else
+    {
+        var_x:= var_width/2
+        var_y:= var_height/2
+        MouseMove var_x,var_y
+    }
+    return
+Appskey & y::
+    Loop
+    {
+        cState  := GetKeyState("Y", "P")
+        spState := GetKeyState("Appskey", "P")
+        if !cState || !spState
+        {
+            break
+        }
+        WinGetPos,var_rx,var_ry,var_width,var_height,A
+        if GetKeyState("Ctrl", "P")
+        {
+            if GetKeyState("Shift", "P")
+            {
+                var_x:=50
+                var_y:=50
+            }
+            else
+            {
+                var_x := var_width / 4
+                var_y := var_height /4
+            }
+            MouseMove %var_x%,%var_y%
+            break
+        }
+        else
+        {
+            var_v := 15
+            var_y := 15 * var_height / var_width
+        }
+        MouseMove, -%var_v%, -%var_y%, 0, R
+    }
+    return
+Appskey & u::
+    WinGetPos,var_rx,var_ry,var_width,var_height,A
+    if GetKeyState("Ctrl", "P")
+{
+        if GetKeyState("Shift", "P")
+        {
+            var_x:=a_screenwidth - var_rx -40
+            var_y:=-var_ry
+        }
+        else
+        {
+            var_x := var_width - 40
+            var_y := 40
+        }
+    }
+    else
+    {
+        var_x := var_width * 3 / 4
+        var_y := var_height /4
+    }
+    MouseMove %var_x%,%var_y%
+    return
+Appskey & p::
+    WinGetPos,var_rx,var_ry,var_width,var_height,A
+    if GetKeyState("Ctrl", "P")
+    {
+        if GetKeyState("Shift", "P")
+        {
+            var_x:=a_screenwidth-var_rx-40
+            var_y:=a_screenheight-var_ry
+        }
+        else
+        {
+            var_x:= var_width-40
+            var_y:= var_height-40
+        }
+    }
+    else
+    {
+        var_x:= var_width * 3 / 4
+        var_y:= var_height * 3 / 4
+    }
+    MouseMove %var_x%,%var_y%
+    return
+Appskey & o::
+    WinGetPos,var_rx,var_ry,var_width,var_height,A
+    if GetKeyState("Ctrl", "P")
+    {
+        if GetKeyState("Shift", "P")
+        {
+            var_x:=-var_rx+40
+            var_y:=a_screenheight-var_ry-40
+        }
+        else
+        {
+            var_x := 40
+            var_y := var_height-40
+        }
+    }
+    else
+    {
+        var_x:= var_width/4
+        var_y:= var_height*3/4
+    }
+    MouseMove %var_x%,%var_y%
+    return
 Appskey & `;::
     ;获取鼠标相对于窗口的位置
     WinGetPos,var_x_1,var_y_1,,,A
@@ -392,6 +519,8 @@ Appskey & l::
         MouseMove, %var_v%, 0, 0, R
     }
     return
+; -----------------------------------------------------------------------------------  鼠标控制 end -----------------------------------------------------------
+
 <#Space::Send <#+{t}
 
 ; 窗口移动
@@ -494,121 +623,6 @@ Appskey & g::
 ;    GetKeyState, state, Lshift, P
 ;    弹出消息
 ;    msgBox %state%
-;鼠标
-Appskey & ,::
-    GetKeyState, state, LButton
-    if state = U
-    {
-        SendEvent {Click down}
-        SetSystemCursor("beam_rl.cur")
-    }
-    else
-    {
-        SendEvent {Click up}
-        RestoreCursors()
-    }
-    return
-Appskey & i::
-    WinGetPos,var_x_1,var_y_1,var_width,var_height,A
-    if GetKeyState("Ctrl", "P")
-    {
-        MouseMove a_screenwidth/2-var_x_1,a_screenheight/2-var_y_1
-    }
-    else
-    {
-        var_x:= var_width/2
-        var_y:= var_height/2
-        MouseMove var_x,var_y
-    }
-    return
-Appskey & y::
-    WinGetPos,var_rx,var_ry,var_width,var_height,A
-    if GetKeyState("Ctrl", "P")
-    {
-        if GetKeyState("Shift", "P")
-        {
-            var_x:=-var_rx+40
-            var_y:=-var_ry+40
-        }
-        else
-        {
-            var_x := 50
-            var_y := 50
-        }
-    }
-    else
-    {
-        var_x := var_width / 4
-        var_y := var_height /4
-    }
-    MouseMove %var_x%,%var_y%
-    return
-Appskey & u::
-    WinGetPos,var_rx,var_ry,var_width,var_height,A
-    if GetKeyState("Ctrl", "P")
-    {
-        if GetKeyState("Shift", "P")
-        {
-            var_x:=a_screenwidth - var_rx -40
-            var_y:=-var_ry
-        }
-        else
-        {
-            var_x := var_width - 40
-            var_y := 40
-        }
-    }
-    else
-    {
-        var_x := var_width * 3 / 4
-        var_y := var_height /4
-    }
-    MouseMove %var_x%,%var_y%
-    return
-Appskey & p::
-    WinGetPos,var_rx,var_ry,var_width,var_height,A
-    if GetKeyState("Ctrl", "P")
-    {
-        if GetKeyState("Shift", "P")
-        {
-            var_x:=a_screenwidth-var_rx-40
-            var_y:=a_screenheight-var_ry
-        }
-        else
-        {
-            var_x:= var_width-40
-            var_y:= var_height-40
-        }
-    }
-    else
-    {
-        var_x:= var_width * 3 / 4
-        var_y:= var_height * 3 / 4
-    }
-    MouseMove %var_x%,%var_y%
-    return
-Appskey & o::
-    WinGetPos,var_rx,var_ry,var_width,var_height,A
-    if GetKeyState("Ctrl", "P")
-    {
-        if GetKeyState("Shift", "P")
-        {
-            var_x:=-var_rx+40
-            var_y:=a_screenheight-var_ry-40
-        }
-        else
-        {
-            var_x := 40
-            var_y := var_height-40
-        }
-    }
-    else
-    {
-        var_x:= var_width/4
-        var_y:= var_height*3/4
-    }
-    MouseMove %var_x%,%var_y%
-    return
 ;CapsLock 映射成Esc
 $CapsLock::
     SetCapsLockState, AlwaysOff
