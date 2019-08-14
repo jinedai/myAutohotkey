@@ -508,7 +508,7 @@ Appskey & l::
     return
 ; -----------------------------------------------------------------------------------  鼠标控制 end -----------------------------------------------------------
 
-<#Space::Send <#+{t}
+<#Space::Send #+{t}
 
 ; 窗口移动
 ; 上
@@ -634,20 +634,20 @@ Space & 1::
 <#F10::Send {Volume_Mute}
 Appskey & [::
     if GetKeyState("Ctrl", "P")
-        send <!{up}
+        send !{up}
     else
-        send <!{left}
+        send !{left}
     return
 Appskey & ]::
     if GetKeyState("Ctrl", "P")
-        send <!{up}
+        send !{up}
     else
-        send <!{right}
+        send !{right}
     return
-Appskey & 6::send <!{6}
-Appskey & 7::send <!{7}
-Appskey & 8::send <!{8}
-Appskey & 9::send <!{9}
+Appskey & 6::send !{6}
+Appskey & 7::send !{7}
+Appskey & 8::send !{8}
+Appskey & 9::send !{9}
 
 
 ; ------------------   输入法 start  -------------------
