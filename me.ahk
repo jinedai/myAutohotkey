@@ -1,5 +1,4 @@
 ;init
-#UseHook
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 #SingleInstance force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
@@ -356,37 +355,73 @@ Appskey & `;::
             loop ,3
             {
                 tmpY := 150 + (a_index - 1) * ySpace
+                tmpIndex = %a_index%
                 loop ,3
                 {
-                    XArray.Push(150 + xSpace * (a_index - 1))
-                    YArray.Push(tmpY)
+                    if (a_index = 2) and (tmpIndex = 2)
+                    {
+                        XArray.Push(150 + xSpace * (a_index - 3/2))
+                        YArray.Push(tmpY - ySpace / 2)
+                    }
+                    else
+                    {
+                        XArray.Push(150 + xSpace * (a_index - 1))
+                        YArray.Push(tmpY)
+                    }
                 }
             }
             loop ,3
             {
                 tmpY := 150 + (a_index - 1) * ySpace
+                tmpIndex = %a_index%
                 loop ,3
                 {
-                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
-                    YArray.Push(tmpY)
+                    if (a_index = 2) and (tmpIndex =2)
+                    {
+                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1/2))
+                        YArray.Push(tmpY - ySpace / 2)
+                    }
+                    else
+                    {
+                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
+                        YArray.Push(tmpY)
+                    }
                 }
             }
             loop ,3
             {
                 tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
+                tmpIndex = %a_index%
                 loop ,3
                 {
-                    XArray.Push(150 + xSpace * (a_index - 1))
-                    YArray.Push(tmpY)
+                    if (a_index = 2) and (tmpIndex =2)
+                    {
+                        XArray.Push(150 + xSpace * (a_index - 3/2))
+                        YArray.Push(tmpY + ySpace * 1 / 2)
+                    }
+                    else
+                    {
+                        XArray.Push(150 + xSpace * (a_index - 1))
+                        YArray.Push(tmpY)
+                    }
                 }
             }
             loop ,3
             {
                 tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
+                tmpIndex = %a_index%
                 loop ,3
                 {
-                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
-                    YArray.Push(tmpY)
+                    if (a_index = 2) and (tmpIndex =2)
+                    {
+                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1/2))
+                        YArray.Push(tmpY + ySpace * 1/2)
+                    }
+                    else
+                    {
+                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
+                        YArray.Push(tmpY)
+                    }
                 }
             }
 
