@@ -1,18 +1,5 @@
-Loop, %0%  ; For each parameter:
-{
-    param := %A_Index%  ; Fetch the contents of the variable whose name is contained in A_Index.
-    params .= A_Space . param
-}
-ShellExecute := A_IsUnicode ? "shell32\ShellExecute":"shell32\ShellExecuteA"
-if not A_IsAdmin
-{
-    If A_IsCompiled
-       DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_ScriptFullPath, str, params , str, A_WorkingDir, int, 3)
-    Else                     
-       DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_AhkPath, str, """" . A_ScriptFullPath . """" . A_Space . params, str, A_WorkingDir, int, 1)
-    ExitApp
-}
 ;init
+#UseHook
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 #SingleInstance force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
@@ -24,7 +11,6 @@ SetCapsLockState, AlwaysOff
 ; 禁用左Win键
 LWin::return
 <+Space::return
-
 
 
 ; ------------------------------------------- functions start ----------------------------------
@@ -251,13 +237,15 @@ Appskey & ,::
     }
     return
 Appskey & i::
-    WinGetPos,var_x_1,var_y_1,var_width,var_height,A
     if GetKeyState("Ctrl", "P")
     {
-        MouseMove a_screenwidth/2-var_x_1,a_screenheight/2-var_y_1
+        CoordMode, Mouse, Screen
+        MouseMove a_screenwidth/2, a_screenheight/2
+        CoordMode, Mouse, Window
     }
     else
     {
+        WinGetPos,var_x_1,var_y_1,var_width,var_height,A
         var_x:= var_width/2
         var_y:= var_height/2
         MouseMove var_x,var_y
@@ -269,8 +257,8 @@ Appskey & y::
     {
         if GetKeyState("Shift", "P")
         {
-            var_x:=-var_rx+40
-            var_y:=-var_ry+40
+            var_x:=-var_rx-40
+            var_y:=-var_ry-40
         }
         else
         {
@@ -288,7 +276,7 @@ Appskey & y::
 Appskey & u::
     WinGetPos,var_rx,var_ry,var_width,var_height,A
     if GetKeyState("Ctrl", "P")
-{
+    {
         if GetKeyState("Shift", "P")
         {
             var_x:=a_screenwidth - var_rx -40
@@ -336,7 +324,7 @@ Appskey & o::
         if GetKeyState("Shift", "P")
         {
             var_x:=-var_rx+40
-            var_y:=a_screenheight-var_ry-40
+            var_y:=a_screenheight-var_ry+40
         }
         else
         {
@@ -358,29 +346,169 @@ Appskey & `;::
     {
         if GetKeyState("Shift", "P")
         {
-            MouseGetPos,var_x,var_y
-            MouseMove 2*(a_screenwidth/2-var_x_1)-var_x, var_y
+            ;设置菜单热键及显示文本, 目前共36个
+            IndexArray :=["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1","2","3","4","5","6","7","8","9","0"]
+
+            xSpace := (a_screenwidth / 2  - 300) / 2
+            ySpace := (a_screenheight / 2 - 300) / 2
+            XArray:=[]
+            YArray:=[]
+            loop ,3
+            {
+                tmpY := 150 + (a_index - 1) * ySpace
+                loop ,3
+                {
+                    XArray.Push(150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
+            loop ,3
+            {
+                tmpY := 150 + (a_index - 1) * ySpace
+                loop ,3
+                {
+                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
+            loop ,3
+            {
+                tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
+                loop ,3
+                {
+                    XArray.Push(150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
+            loop ,3
+            {
+                tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
+                loop ,3
+                {
+                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
+
+            menuIndex:= % XArray.Length()
+            gosub Ever_生成菜单
+            gosub startHotKeys
         }else{
-            if y_posFlag
+            if vCount>0
+            {
+                vCount+=1
+                return
+            }
+            else
             {
                 MouseMove a_screenwidth/2 - var_x_1, a_screenheight/4 - var_y_1
-                y_posflag := 0
-            }else{
-                MouseMove a_screenwidth/2 -var_x_1, a_screenheight*3/4 - var_y_1
-                y_posflag := 1
+                vCount=1
             }
+            SetTimer, symmetryHMouse, 300
         }
     }else{
-        if x_posFlag
+        if vCount>0
         {
-            MouseMove a_screenwidth*3/4 - var_x_1, a_screenheight/2 - var_y_1
-            x_posflag := 0
-        }else{
-            MouseMove a_screenwidth/4 -var_x_1, a_screenheight/2 - var_y_1
-            x_posflag := 1
+            vCount+=1
+            return
         }
+        else
+        {
+            MouseMove a_screenwidth/4 -var_x_1, a_screenheight/2 - var_y_1
+            vCount=1
+        }
+        SetTimer, symmetryMouse, 300
     }
     return
+
+symmetryMouse:
+    SetTimer, symmetryMouse,off
+    if vCount > 1
+        MouseMove a_screenwidth*3/4 - var_x_1, a_screenheight/2 - var_y_1
+    vCount=0
+    return
+symmetryHMouse:
+    SetTimer, symmetryHMouse,off
+    if vCount > 1
+        MouseMove a_screenwidth/2 -var_x_1, a_screenheight*3/4 - var_y_1
+    vCount=0
+    return
+;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 start  --------------------------------------------------------------
+Ever_执行热键:
+    For index, value in IndexArray
+        if (A_ThisHotkey = value){
+            if (index<=menuIndex){
+                xtip:=% XArray[index]
+                ytip:=% YArray[index]
+                CoordMode, Mouse, Screen
+                MouseMove xtip, ytip
+                CoordMode, Mouse, Window
+            }
+        }
+    
+    SetTimer, Ever_移除菜单,1
+    gosub Ever_关闭热键
+    return
+
+;优化想法：这些窗口第一次运行的时候循环一次保存起来，移除只是隐藏不真销毁。然后第二次以后要显示的时候直接显示即可。而且显示菜单块的时候要一起显示不要有那种一个接一个的感觉。
+Ever_生成菜单:
+    ;~ MsgBox % IndexArray.Length()
+    For index, value in IndexArray
+        if (index<=menuIndex){
+            xtip:=% XArray[index]
+            ytip:=% YArray[index]
+            Gui,%index%:-Caption +AlwaysOnTop +ToolWindow  ;去标题栏任务栏alttab菜单项与置顶
+            Gui,%index%: Color, E91E63 ;设置菜单块背景颜色
+            Gui,%index%: Font, s12 w550 cFFFFFF,A Verdana  ;设置下面的文本大小，字体
+            Gui,%index%: Margin, x3, y3 ;设置字体控件距离左右上下距离
+            Gui,%index%: Add, Text, w18 h18 Center , % IndexArray[index]  ;设置文本，文本颜色
+            Gui,%index%: Show, X%xtip% Y%ytip%
+        }
+    return
+
+startHotKeys:
+    Hotkey, Esc, Ever_执行热键, on
+    Loop
+    {
+        if A_Index > %menuIndex%
+        {
+            break  ; 终止循环
+        }
+        if A_Index < 1
+        {
+            continue ; 跳过后面并开始下一次重复
+        }
+        Hotkey,% IndexArray[A_Index] ,Ever_执行热键,on  ;设置热键只对这个标签生效
+    }
+    return
+
+Ever_关闭热键:
+    Hotkey, Esc, ,off
+    Loop
+    {
+        if A_Index > %menuIndex%
+            break  ; 终止循环
+        if A_Index < 1
+        continue ; 跳过后面并开始下一次重复
+        Hotkey,% IndexArray[A_Index] ,,,off
+    }
+    return
+
+Ever_移除菜单:
+    SetTimer, Ever_移除菜单, off
+    ;~ For index, value in array
+    Loop
+    {
+        if A_Index > %menuIndex%
+            break  ; 终止循环
+        if A_Index < 1
+            continue ; 跳过后面并开始下一次重复
+        ;~ Gui, %A_Index%:-Parent
+        Gui, %A_Index%:Destroy
+    }
+    return
+;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 end  --------------------------------------------------------------
+    
 ;Control The Mouse
 Appskey & k::
     Loop

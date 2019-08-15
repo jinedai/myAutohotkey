@@ -16,12 +16,31 @@
 F10::   ;热键设置
     ;设置规则菜单块
     IndexArray :=["S","A","D","F","Q","W","E","R","Z","X","C","V","1","2","3","4","T","G","B","J","K","L","H","U","N","M",",",".","5","6","7","8","9","0"]   ;设置菜单热键及显示文本
+    ;WinGet, controls, ControlList, ahk_class TNavicatMainForm
+    WinGet, ActiveControlList, ControlList, A
+    XArray:=[]   ;设置x坐标
+    YArray:=[]  ;设置y坐标
+    Loop, Parse, ActiveControlList, `n
+    {
+;        msgBox %A_LoopField%
+        ControlGetPos , X, Y, Width, Height, %A_LoopField%, A
+        if Y < 0 
+            continue
+        MsgBox %X%  %Y%  %Width%  %Height%  %A_LoopField%
+        XArray.Push(X)
+        YArray.Push(Y)
+
+    }
+;   loop %controls%
+;   {
+;       ControlGetPos , X, Y, Width, Height, controls%a_index%
+;       msgBox %X%  %Y%
+;   }
+    
     ;~ MsgBox, %active_id%
     ;设置不规则菜单块
-    XArray:=["0","200","400", "600", "800"]   ;设置x坐标
-    YArray:=["45","45","45","45", "90"]  ;设置y坐标
-    ;XArray.InsertAt(4,QQFile)  ;往xarray插入数据
-    ;XArray.InsertAt(5,QQChat)
+;   ;XArray.InsertAt(4,QQFile)  ;往xarray插入数据
+;   ;XArray.InsertAt(5,QQChat)
     menuIndex:= % XArray.Length()   ;设置不规则菜单块数量，根据坐标数量设定，没有可设置为0
     gosub Ever_生成菜单
     gosub Ever_开启热键
@@ -100,6 +119,7 @@ Ever_生成菜单:
         if (index<=menuIndex){
             xtip:=% XArray[index]
             ytip:=% YArray[index]
+            msgBox %xtip% %ytip%
             Gui,%index%:-Caption +AlwaysOnTop +ToolWindow  ;去标题栏任务栏alttab菜单项与置顶
             Gui,%index%: Color, 525252  ;设置菜单块背景颜色
             Gui,%index%: Font, s12 w550 cFFFFFF,A Verdana  ;设置下面的文本大小，字体

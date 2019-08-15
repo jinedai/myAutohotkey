@@ -7,6 +7,7 @@ a::
     }
     return
 s::
+    toolTip 14  45
     ifNotEqual viewStatus, 2
     {
         viewStatus := 2
@@ -14,10 +15,11 @@ s::
     }
     return
 d::
+    toolTip 14  45
     ifNotEqual viewStatus, 2
     {
         ifEqual viewStatus, 1
-            sendInput {F3}
+            sendInput {Esc}
         viewStatus := 2
         sendInput {F2}
     }
@@ -26,7 +28,7 @@ f::
     ifNotEqual viewStatus, 3
     {
         ifEqual viewStatus, 1
-            sendInput {F2}
+            sendInput {Esc}
         viewStatus := 3
         sendInput {F3}
         ;FileAppend F3`n, log.txt
