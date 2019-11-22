@@ -1,3 +1,17 @@
+Loop, %0%  ; For each parameter:
+{
+    param := %A_Index%  ; Fetch the contents of the variable whose name is contained in A_Index.
+    params .= A_Space . param
+}
+ShellExecute := A_IsUnicode ? "shell32\ShellExecute":"shell32\ShellExecuteA"
+if not A_IsAdmin
+{
+    If A_IsCompiled
+       DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_ScriptFullPath, str, params , str, A_WorkingDir, int, 3)
+    Else                     
+       DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_AhkPath, str, """" . A_ScriptFullPath . """" . A_Space . params, str, A_WorkingDir, int, 1)
+    ExitApp
+}
 ;init
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 #SingleInstance force
@@ -39,30 +53,32 @@ sendbyclip(var_string)
     Clipboard = %ClipboardOld%  
 }
 ; -------------------------------------------- functions end ------------------------------------
-
 Space & i::
-    if pressesCount>0
+    if vCount>0
     {
-        pressesCount+=1
+        vCount+=1
         return
     }
     else
     {
-        sendbyclip("`$")
-        ;sendInput {Blind}{Raw}`$
-        pressesCount=1
+        sendInput {Blind}{Raw}`$
+        vCount=1
     }
-    SetTimer,WaitKeys,300
+    SetTimer,WaitKeys,400
     return
 WaitKeys:
     SetTimer,WaitKeys,off
-    if pressesCount > 1
+    if vCount=2
     {
         SendInput {Backspace}
-        sendbyclip("=>")
-        ;sendInput {Raw}=>
+        sendInput {Raw}13168782535
     }
-    pressesCount=0
+    else if vCount > 2
+    {
+        SendInput {Backspace}
+        sendInput {Raw}86099830jine
+    }
+    vCount=0
     return
 Space & a::
     if GetKeyState("Ctrl", "P")
@@ -345,90 +361,6 @@ Appskey & `;::
     {
         if GetKeyState("Shift", "P")
         {
-            ;设置菜单热键及显示文本, 目前共36个
-            IndexArray :=["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1","2","3","4","5","6","7","8","9","0"]
-
-            xSpace := (a_screenwidth / 2  - 300) / 2
-            ySpace := (a_screenheight / 2 - 300) / 2
-            XArray:=[]
-            YArray:=[]
-            loop ,3
-            {
-                tmpY := 150 + (a_index - 1) * ySpace
-                tmpIndex = %a_index%
-                loop ,3
-                {
-                    if (a_index = 2) and (tmpIndex = 2)
-                    {
-                        XArray.Push(150 + xSpace * (a_index - 3/2))
-                        YArray.Push(tmpY - ySpace / 2)
-                    }
-                    else
-                    {
-                        XArray.Push(150 + xSpace * (a_index - 1))
-                        YArray.Push(tmpY)
-                    }
-                }
-            }
-            loop ,3
-            {
-                tmpY := 150 + (a_index - 1) * ySpace
-                tmpIndex = %a_index%
-                loop ,3
-                {
-                    if (a_index = 2) and (tmpIndex =2)
-                    {
-                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1/2))
-                        YArray.Push(tmpY - ySpace / 2)
-                    }
-                    else
-                    {
-                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
-                        YArray.Push(tmpY)
-                    }
-                }
-            }
-            loop ,3
-            {
-                tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
-                tmpIndex = %a_index%
-                loop ,3
-                {
-                    if (a_index = 2) and (tmpIndex =2)
-                    {
-                        XArray.Push(150 + xSpace * (a_index - 3/2))
-                        YArray.Push(tmpY + ySpace * 1 / 2)
-                    }
-                    else
-                    {
-                        XArray.Push(150 + xSpace * (a_index - 1))
-                        YArray.Push(tmpY)
-                    }
-                }
-            }
-            loop ,3
-            {
-                tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
-                tmpIndex = %a_index%
-                loop ,3
-                {
-                    if (a_index = 2) and (tmpIndex =2)
-                    {
-                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1/2))
-                        YArray.Push(tmpY + ySpace * 1/2)
-                    }
-                    else
-                    {
-                        XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
-                        YArray.Push(tmpY)
-                    }
-                }
-            }
-
-            menuIndex:= % XArray.Length()
-            gosub Ever_生成菜单
-            gosub startHotKeys
-        }else{
             if vCount>0
             {
                 vCount+=1
@@ -440,19 +372,103 @@ Appskey & `;::
                 vCount=1
             }
             SetTimer, symmetryHMouse, 300
+        }else{
+            if vCount>0
+            {
+                vCount+=1
+                return
+            }
+            else
+            {
+                MouseMove a_screenwidth/4 -var_x_1, a_screenheight/2 - var_y_1
+                vCount=1
+            }
+            SetTimer, symmetryMouse, 300
         }
     }else{
-        if vCount>0
+        ;设置菜单热键及显示文本, 目前共42个
+        IndexArray :=["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1","2","3","4","5","6","7","8","9","0","[","]","-","=",",","."]
+
+        xSpace := (a_screenwidth / 2  - 300) / 2
+        ySpace := (a_screenheight / 2 - 300) / 2
+        XArray:=[]
+        YArray:=[]
+        loop ,3
         {
-            vCount+=1
-            return
+            tmpY := 150 + (a_index - 1) * ySpace
+            tmpIndex = %a_index%
+            loop ,3
+            {
+                if (a_index = 2) and (tmpIndex = 2)
+                {
+                    XArray.Push(150 + xSpace * (a_index - 3/2))
+                    YArray.Push(tmpY - ySpace / 2)
+                }
+                else
+                {
+                    XArray.Push(150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
         }
-        else
+        loop ,3
         {
-            MouseMove a_screenwidth/4 -var_x_1, a_screenheight/2 - var_y_1
-            vCount=1
+            tmpY := 150 + (a_index - 1) * ySpace
+            tmpIndex = %a_index%
+            loop ,3
+            {
+                if (a_index = 2) and (tmpIndex =2)
+                {
+                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1/2))
+                    YArray.Push(tmpY - ySpace / 2)
+                }
+                else
+                {
+                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
         }
-        SetTimer, symmetryMouse, 300
+        loop ,3
+        {
+            tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
+            tmpIndex = %a_index%
+            loop ,3
+            {
+                if (a_index = 2) and (tmpIndex =2)
+                {
+                    XArray.Push(150 + xSpace * (a_index - 3/2))
+                    YArray.Push(tmpY + ySpace * 1 / 2)
+                }
+                else
+                {
+                    XArray.Push(150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
+        }
+        loop ,3
+        {
+            tmpY := a_screenheight / 2 + 150 + (a_index - 1) * ySpace
+            tmpIndex = %a_index%
+            loop ,3
+            {
+                if (a_index = 2) and (tmpIndex =2)
+                {
+                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1/2))
+                    YArray.Push(tmpY + ySpace * 1/2)
+                }
+                else
+                {
+                    XArray.Push(a_screenwidth / 2 + 150 + xSpace * (a_index - 1))
+                    YArray.Push(tmpY)
+                }
+            }
+        }
+
+        menuIndex:= % XArray.Length()
+        gosub Ever_生成菜单
+        gosub startHotkey
     }
     return
 
@@ -501,7 +517,7 @@ Ever_生成菜单:
         }
     return
 
-startHotKeys:
+startHotkey:
     Hotkey, Esc, Ever_执行热键, on
     Loop
     {
@@ -673,49 +689,69 @@ Appskey & l::
 
 <#Space::Send #+{t}
 
-; 窗口移动
+; -----------------------------------------------------------------------------------  窗口移动 start ---------------------------------------------------------
 ; 上
-<^+!k::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    var_y:=var_y-60
-    ifWinActive ahk_class CabinetWClass
-    {
-        var_x:=var_x - 8
-        var_y:=var_y - 74
+^+!k::
+    Loop{
+        cState := GetKeyState("K", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_y := var_y-60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
     }
-    winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
 ; 左
-<^+!h::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    var_x:=var_x-60
-    ifWinActive ahk_class CabinetWClass
-    {
-        var_y:=var_y-74
+^+!h::
+    Loop{
+        cState := GetKeyState("H", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_x := var_x-60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
     }
-    winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
 ; 右
-<^+!l::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    var_x:=var_x+60
-    ifWinActive ahk_class CabinetWClass
-    {
-        var_y:=var_y - 74
+^+!l::
+    Loop{
+        cState := GetKeyState("L", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_x := var_x+60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
     }
-    winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
 ; 下
-<^+!j::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    var_y:=var_y+60
-    ifWinActive ahk_class CabinetWClass
-    {           
-        var_x:=var_x - 8
-        var_y:=var_y - 74
+^+!j::
+    Loop{
+        cState := GetKeyState("J", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_y := var_y+60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
     }
-    winmove,%title_ActiveWindow%,,%var_x%,%var_y%
     return
+; -----------------------------------------------------------------------------------  窗口移动 end ---------------------------------------------------------
+
 ; 窗口调大
 CapsLock & =::
     WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
@@ -890,80 +926,77 @@ Space & ,::
     return
 
 ; 窗口布局
-Space & q::
-    Send #{left}
-    MouseMove a_screenwidth/4, a_screenheight/2
-    SendInput {click}
-    return
-Space & o::
-    Send #{right}
-    MouseMove a_screenwidth*3/4, a_screenheight/2
-    SendInput {click}
-    return
+Space & q::Send #{left}
+Space & o::Send #{right}
 Space & g::Send #{up}
 Space & b::Send #{down}
 
 ; 应用
-Activate(t,p)
+Activate(t, p, type := "ahk_exe")
 {
-    WinGet, count, Count, ahk_class %t%
+    WinGet,count,Count,%type% %t%
     if count > 1
     {
-        global winProcess, currentWin := t
-        if (winProcess > 0) 
+        global winProcess, currentWin := t, currentType := type
+            
+        if (winProcess > 0)
         {
             winProcess += 1
             return
+        }else{
+            winProcess = 1
         }
-        winProcess := 1
         SetTimer, changeWin, -400
     }
     else
     {
-        IfWinActive ahk_class %t%
+        IfWinActive,%type% %t%
         {
-          return
+            return
         }
         SetTitleMatchMode 2   
-        IfWinExist ahk_class %t%
+        IfWinExist,%type% %t%
         {
-          WinShow
-          WinActivate           
-          return
+            WinShow
+            WinActivate           
+            IME_SET(0)
+            gosub Appskey & i
+            return
         }
         Run %p%
     }
     return
 }
-changeWin:
-    WinGet, id, List, ahk_class %currentWin%
-;    Loop, %id%
-;    {
-        this_id := id%winProcess%
-        WinActivate, ahk_id %this_id%
-        winProcess := 0
-;        WinGetClass, this_class, ahk_id %this_id%
-;        WinGetTitle, this_title, ahk_id %this_id%
-;        MsgBox, 4, , Visiting All Windows`n%A_Index% of %id%`nahk_id %this_id%`nahk_class %this_class%`n%this_title%`n`nContinue?
-;        IfMsgBox, NO, break
-;    }
+changeWin: 
+    WinGet,id,List,%currentType% %currentWin%
+    pidStr := ""
+    Loop,%id%
+    {
+        pidStr := pidStr . "," . id%A_index%
+    }
+    pidStr := LTrim(pidStr,",")
+    Sort,pidStr,N D,
+    pidArr := StrSplit(pidStr,",")
+    temp := pidArr[winProcess]
+    WinActivate,ahk_id %temp%
+    IME_SET(0)  
+    gosub Appskey & i
+    winProcess := 0
     return
 
 
-CapsLock & h::Activate("Chrome_WidgetWin_1","chrome")
-CapsLock & j::Activate("SunAwtFrame","D:\PhpStorm 2019.1\bin\phpstorm64.exe")
-CapsLock & k::Activate("TNavicatMainForm","D:\Navicat Premium\navicat.exe")
+CapsLock & h::Activate("chrome.exe","chrome")
+CapsLock & j::Activate("phpstorm64.exe","D:\PhpStorm 2019.1\bin\phpstorm64.exe")
+CapsLock & k::Activate("navicat.exe","D:\Navicat 12 for MySQL\navicat.exe")
 ;CapsLock & !k::Activate("TMainForm","D:\heidisql\heidisql.exe")
-CapsLock & l::Activate("YXMainFrame","C:\Program Files (x86)\Yinxiang Biji\印象笔记\Evernote.exe")
-CapsLock & `;::Activate("CabinetWClass", "C:\Windows\explorer.exe")
-CapsLock & n::Activate("EVERYTHING", "C:\Program Files\Everything\Everything.exe")
-CapsLock & m::Activate("Vim","gvim")
-CapsLock & y::Activate("Qt5QWindowIcon","d:\VirtualBox\VirtualBox.exe")
-CapsLock & u::Activate("WindowsForms10.Window.8.app.0.141b42a_r10_ad1","d:\Fiddler\Fiddler.exe")
-;CapsLock & o::Activate("HwndWrapper[AxureRP.exe;;a346c183-6bcd-4041-9886-11ded0117eb9]", "D:\Axure\AxureRPProPortable\AxureRP.exe")
-;CapsLock & p::Activate("WeChatMainWndForPC", "D:\Tencent\WeChat\WeChatWeb.exe")
-#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
-;CapsLock & i::Activate("AcrobatSDIWindow","C:\Program Files (x86)\Adobe\Reader 11.0\Reader\AcroRd32.exe")
-;CapsLock & u::Activate("OpusApp","C:\Program Files (x86)\Microsoft Office\Office14\WINWORD.EXE")
-;CapsLock & o::Activate("HwndWrapper[AxureRP.exe;;a346c183-6bcd-4041-9886-11ded0117eb9]", "D:\Axure\AxureRPProPortable\AxureRP.exe")
-;CapsLock & p::Activate("WeChatMainWndForPC", "D:\Tencent\WeChat\WeChatWeb.exe")
+CapsLock & l::Activate("Evernote.exe","Evernote")
+CapsLock & `;::Activate("CabinetWClass", "C:\Windows\explorer.exe", "ahk_class")
+CapsLock & n::Activate("EVERYTHING", "everything")
+CapsLock & m::Activate("gvim.exe","gvim")
+CapsLock & u::Activate("et.exe","excel")
+CapsLock & o::Activate("wps.exe", "word")
+;CapsLock & p::Activate("Kitematic.exe", "docker")
+;#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
+;CapsLock & o::Activate("TFoxMainFrm.UnicodeClass", "C:\Foxmail 7.2\Foxmail.exe")
+CapsLock & y::Activate("VirtualBox.exe", "D:\VirtualBox\VirtualBox.exe")
+

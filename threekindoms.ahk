@@ -1,36 +1,87 @@
+last := 0
+viewStatus := 0
 a::
     ifNotEqual viewStatus, 1
     {
+        last := viewStatus
         viewStatus := 1
         sendInput {F1}
-        ;FileAppend F1`n, log.txt
     }
     return
 s::
-    toolTip 14  45
-    ifNotEqual viewStatus, 2
-    {
-        viewStatus := 2
-        sendInput {F2}
-    }
-    return
 d::
-    toolTip 14  45
     ifNotEqual viewStatus, 2
     {
-        ifEqual viewStatus, 1
+        if (viewStatus = 1) and (last = 2)
+        {
             sendInput {Esc}
+        }
+        else
+        {
+            sendInput {F2}
+        }
+        last := viewStatus
         viewStatus := 2
-        sendInput {F2}
     }
     return
 f::
     ifNotEqual viewStatus, 3
     {
-        ifEqual viewStatus, 1
+        if (viewStatus = 1) and (last = 3)
+        {
             sendInput {Esc}
+        }
+        else
+        {
+            sendInput {F3}
+        }
+        last := viewStatus
         viewStatus := 3
-        sendInput {F3}
         ;FileAppend F3`n, log.txt
     }
     return
+
+#UseHook, On
+g::
+    MouseGetPos xPos, yPos
+    MouseMove 200, 60
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+z::
+    MouseGetPos xPos, yPos
+    MouseMove 200, 150
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+x::
+    MouseGetPos xPos, yPos
+    MouseMove 200, 240
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+c::
+    MouseGetPos xPos, yPos
+    MouseMove 200, 330
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+v::
+    MouseGetPos xPos, yPos
+    MouseMove 200, 420
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+b::
+    MouseGetPos xPos, yPos
+    MouseMove 200, 510
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+t::
+    MouseGetPos xPos, yPos
+    MouseMove 240, 60
+    sendInput {LButton}
+    MouseMove %xPos%, %yPos%
+    return
+r::sendInput {b}
