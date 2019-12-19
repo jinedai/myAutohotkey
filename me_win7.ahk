@@ -1,13 +1,20 @@
+Loop, %0%  ; For each parameter:
+{
+    param := %A_Index%  ; Fetch the contents of the variable whose name is contained in A_Index.
+    params .= A_Space . param
+}
+ShellExecute := A_IsUnicode ? "shell32\ShellExecute":"shell32\ShellExecuteA"
 if not A_IsAdmin
 {
-   Run *RunAs "%A_ScriptFullPath%"  ; Requires v1.0.92.01+
-   ExitApp
+    If A_IsCompiled
+       DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_ScriptFullPath, str, params , str, A_WorkingDir, int, 3)
+    Else                     
+       DllCall(ShellExecute, uint, 0, str, "RunAs", str, A_AhkPath, str, """" . A_ScriptFullPath . """" . A_Space . params, str, A_WorkingDir, int, 1)
+    ExitApp
 }
-; 开启键盘钩子
-#UseHook
+;init
 #NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
-#SingleInstance, force
-#WinActivateForce
+#SingleInstance force
 ;SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
@@ -15,16 +22,18 @@ SetTitleMatchMode 2
 ; 禁掉CapsLock键
 SetCapsLockState, AlwaysOff
 ; 禁用左Win键
-$Space::SendInput {Space}
-<LWin::return
-;functions
+LWin::return
+<+Space::return
+
+
+; ------------------------------------------- functions start ----------------------------------
 SetSystemCursor(str)
 {
-    ;替换默认图标
+    ;替换标准的箭头
     IDC_ARROW:=32512
     hCursor  := DllCall("LoadCursorFromFile", "Str", "C:\Windows\Cursors\" . str)
     DllCall("SetSystemCursor", "UInt", hCursor, "Int", IDC_ARROW)
-    ;替换"I"型编辑光标
+    ;替换"I"型光标
     IDC_IBEAM:=32513
     hCursor  := DllCall("LoadCursorFromFile", "Str", "C:\Windows\Cursors\" . str)
     DllCall("SetSystemCursor", "UInt", hCursor, "Int", IDC_IBEAM)
@@ -34,24 +43,43 @@ RestoreCursors()
     SPI_SETCURSORS := 0x57
     DllCall("SystemParametersInfo", "UInt", SPI_SETCURSORS, "UInt", 0, "UInt", 0, "UInt", 0)
 }
-cursorNotice(){
-    SetSystemCursor("aero_busy_xl.ani")
-    sleep 1000
-    RestoreCursors()
+sendbyclip(var_string)
+{
+    ClipboardOld = %ClipboardAll%
+    Clipboard =%var_string%
+    sleep 10
+    send ^v
+    sleep 10
+    Clipboard = %ClipboardOld%  
 }
-initShiftCtrlStatus(){
-    if GetKeyState("Shift")
+; -------------------------------------------- functions end ------------------------------------
+Space & i::
+    if vCount>0
     {
-        Send {Shift up}
-        RestoreCursors()
+        vCount+=1
+        return
     }
-    if GetKeyState("Ctrl")
+    else
     {
-        Send {Ctrl up}
-        RestoreCursors()
+        sendInput {Blind}{Raw}`$
+        vCount=1
     }
-}
-
+    SetTimer,WaitKeys,400
+    return
+WaitKeys:
+    SetTimer,WaitKeys,off
+    if vCount=2
+    {
+        SendInput {Backspace}
+        sendInput {Raw}13168782535
+    }
+    else if vCount > 2
+    {
+        SendInput {Backspace}
+        sendInput {Raw}86099830jine
+    }
+    vCount=0
+    return
 Space & a::
     if GetKeyState("Ctrl", "P")
         Send ^{Home}
@@ -103,10 +131,6 @@ Space & y::
     {
         Send {Shift up}
     }
-    if GetKeyState("Ctrl")
-    {
-        Send {Ctrl up}
-    }
     sleep 10
     IfWinActive ahk_class mintty
     {
@@ -116,11 +140,12 @@ Space & y::
     {
         Send ^{c}
     }
-    cursorNotice()
+    SetSystemCursor("aero_busy_xl.ani")
+    sleep 1000
+    RestoreCursors()
     return
 ; 粘贴    
 Space & p::
-    initShiftCtrlStatus()
     IfWinActive ahk_class mintty
     {
         send +{Ins}
@@ -138,26 +163,28 @@ Space & e::
     Send {Tab down}
     Send {Tab up}
     sleep 10
-    Send {Ctrl up}    
-    return 
-Space & w:: 
-    Send {Ctrl down} 
-    Send {Shift down} 
-    sleep 10 
-    Send {Tab down} 
+    Send {Ctrl up}
+    return
+Space & w::
+    Send {Ctrl down}
+    Send {Shift down}
+    sleep 10
+    Send {Tab down}
     Send {Tab up}
-    sleep 10 
-    Send {Shift up} 
-    Send {Ctrl up} 
-    return 
-; 关闭和添加标签页 
-Space & z:: 
-    initShiftCtrlStatus() 
-    Send ^{w} 
-    return 
-Space & x:: 
-    initShiftCtrlStatus() 
-    Send ^{x} 
+    sleep 10
+    Send {Shift up}
+    Send {Ctrl up}
+    return
+;关闭和添加标签页
+Space & z::Send ^{w}
+Space & x::
+    if shiftFlag = 1
+    {
+        SendInput {RShift up}
+        shiftFlag:=0
+    }
+    Send ^{x}
+    RestoreCursors()
     return
 Space & t::Send ^{t}
 Space & n::
@@ -204,138 +231,12 @@ Space & 6::
     else
         WinSet,Transparent,150,A
     return
-+Space::Send +{Space}
 
+$Space::SendInput {Space}
 $Appskey::SendInput {Appskey}
-<#Space::Send #+{t}
+x_posFlag := 0
+y_posFlag := 0
 
-; 窗口布局
-Space & q::
-    ctlState := GetKeyState("Ctrl", "P")
-    if ctlState
-    {
-        Send #+{left}
-    }else{
-        Send #{left}
-    }
-    return
-    
-Space & o::
-    ctlState := GetKeyState("Ctrl", "P")
-    if ctlState
-    {
-        Send #+{right}
-    }else{
-        Send #{right}
-    }
-    return
-
-Space & g::Send #{up}
-Space & b::Send #{down}
-; -----------------------------------------------------------------------------------  窗口移动 start ---------------------------------------------------------
-; 上
-^+!k::
-    Loop{
-        cState := GetKeyState("K", "P")
-        shiftState := GetKeyState("Shift", "P")
-        ctlState := GetKeyState("Ctrl", "P")
-        altState := GetKeyState("Alt", "P")
-        if !cState || !shiftState || !ctlState || !altState  
-            break
-        WinGetTitle,title_ActiveWindow,A
-        WinGetPos,var_x,var_y,var_width,var_height,A
-        var_y := var_y-60
-        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
-    }
-    return
-; 左
-^+!h::
-    Loop{
-        cState := GetKeyState("H", "P")
-        shiftState := GetKeyState("Shift", "P")
-        ctlState := GetKeyState("Ctrl", "P")
-        altState := GetKeyState("Alt", "P")
-        if !cState || !shiftState || !ctlState || !altState  
-            break
-        WinGetTitle,title_ActiveWindow,A
-        WinGetPos,var_x,var_y,var_width,var_height,A
-        var_x := var_x-60
-        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
-    }
-    return
-; 右
-^+!l::
-    Loop{
-        cState := GetKeyState("L", "P")
-        shiftState := GetKeyState("Shift", "P")
-        ctlState := GetKeyState("Ctrl", "P")
-        altState := GetKeyState("Alt", "P")
-        if !cState || !shiftState || !ctlState || !altState  
-            break
-        WinGetTitle,title_ActiveWindow,A
-        WinGetPos,var_x,var_y,var_width,var_height,A
-        var_x := var_x+60
-        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
-    }
-    return
-; 下
-^+!j::
-    Loop{
-        cState := GetKeyState("J", "P")
-        shiftState := GetKeyState("Shift", "P")
-        ctlState := GetKeyState("Ctrl", "P")
-        altState := GetKeyState("Alt", "P")
-        if !cState || !shiftState || !ctlState || !altState  
-            break
-        WinGetTitle,title_ActiveWindow,A
-        WinGetPos,var_x,var_y,var_width,var_height,A
-        var_y := var_y+60
-        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
-    }
-    return
-; -----------------------------------------------------------------------------------  窗口移动 end ---------------------------------------------------------
-; 窗口调大
-CapsLock & =::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    var_width:=var_width+10
-    var_height:=var_height+10
-    winmove,%title_ActiveWindow%,,%var_x%,%var_y%, %var_width%, %var_height%
-    return
-; 窗口调小
-CapsLock & -::
-    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
-    var_width:=var_width-10
-    var_height:=var_height-10
-    winmove,%title_ActiveWindow%,,%var_x%,%var_y%, %var_width%, %var_height%
-    return
-
-Space & i::
-    if  vCount>0
-    {
-        vCount+=1
-        return
-    }
-    else
-    {
-        sendInput {Blind}{Raw}`$
-        vCount=1
-    }
-    SetTimer,WaitKeys,400
-    return
-WaitKeys:
-    SetTimer,WaitKeys,off
-    if vCount=2
-    {
-        SendInput {Backspace}
-        sendInput {Raw}13168782535
-    }
-    else if vCount > 2
-    {
-        SendInput {Backspace}
-        sendInput {Raw}86099830jine
-    }
-    vCount=0
-    return
 ; -----------------------------------------------------------------------------------  鼠标控制 start  -----------------------------------------------------------
 Appskey & ,::
     GetKeyState, state, LButton
@@ -416,7 +317,7 @@ Appskey & p::
         if GetKeyState("Shift", "P")
         {
             var_x:=a_screenwidth-var_rx-40
-            var_y:=a_screenheight-var_ry+40
+            var_y:=a_screenheight-var_ry
         }
         else
         {
@@ -437,7 +338,7 @@ Appskey & o::
     {
         if GetKeyState("Shift", "P")
         {
-            var_x:=-var_rx-40
+            var_x:=-var_rx+40
             var_y:=a_screenheight-var_ry+40
         }
         else
@@ -567,7 +468,7 @@ Appskey & `;::
 
         menuIndex:= % XArray.Length()
         gosub Ever_生成菜单
-        gosub Ever_StartHotKey
+        gosub startHotkey
     }
     return
 
@@ -603,15 +504,8 @@ Ever_执行热键:
 ;优化想法：这些窗口第一次运行的时候循环一次保存起来，移除只是隐藏不真销毁。然后第二次以后要显示的时候直接显示即可。而且显示菜单块的时候要一起显示不要有那种一个接一个的感觉。
 Ever_生成菜单:
     ;~ MsgBox % IndexArray.Length()
-    CoordMode, Mouse, Screen
-    MouseGetPos, xTag
-    CoordMode, Mouse, Window
     For index, value in IndexArray
         if (index<=menuIndex){
-            if xTag < 0
-            {
-                XArray[index] := (a_screenwidth - XArray[index]) * -1
-            }
             xtip:=% XArray[index]
             ytip:=% YArray[index]
             Gui,%index%:-Caption +AlwaysOnTop +ToolWindow  ;去标题栏任务栏alttab菜单项与置顶
@@ -623,8 +517,8 @@ Ever_生成菜单:
         }
     return
 
-Ever_StartHotKey:
-    Hotkey,Esc, Ever_执行热键, on
+startHotkey:
+    Hotkey, Esc, Ever_执行热键, on
     Loop
     {
         if A_Index > %menuIndex%
@@ -636,7 +530,6 @@ Ever_StartHotKey:
             continue ; 跳过后面并开始下一次重复
         }
         Hotkey,% IndexArray[A_Index] ,Ever_执行热键,on  ;设置热键只对这个标签生效
-        ;~ Hotkey,% IndexArray[A_Index] ,Ever_执行热键2,on
     }
     return
 
@@ -666,6 +559,7 @@ Ever_移除菜单:
     }
     return
 ;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 end  --------------------------------------------------------------
+    
 ;Control The Mouse
 Appskey & k::
     Loop
@@ -791,8 +685,88 @@ Appskey & l::
         MouseMove, %var_v%, 0, 0, R
     }
     return
+; -----------------------------------------------------------------------------------  鼠标控制 end -----------------------------------------------------------
 
-; 鼠标左键、右键点击
+<#Space::Send #+{t}
+
+; -----------------------------------------------------------------------------------  窗口移动 start ---------------------------------------------------------
+; 上
+^+!k::
+    Loop{
+        cState := GetKeyState("K", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_y := var_y-60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
+    }
+    return
+; 左
+^+!h::
+    Loop{
+        cState := GetKeyState("H", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_x := var_x-60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
+    }
+    return
+; 右
+^+!l::
+    Loop{
+        cState := GetKeyState("L", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_x := var_x+60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
+    }
+    return
+; 下
+^+!j::
+    Loop{
+        cState := GetKeyState("J", "P")
+        shiftState := GetKeyState("Shift", "P")
+        ctlState := GetKeyState("Ctrl", "P")
+        altState := GetKeyState("Alt", "P")
+        if !cState || !shiftState || !ctlState || !altState  
+            break
+        WinGetTitle,title_ActiveWindow,A
+        WinGetPos,var_x,var_y,var_width,var_height,A
+        var_y := var_y+60
+        WinMove,%title_ActiveWindow%,,%var_x%,%var_y%
+    }
+    return
+; -----------------------------------------------------------------------------------  窗口移动 end ---------------------------------------------------------
+
+; 窗口调大
+CapsLock & =::
+    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
+    var_width:=var_width+10
+    var_height:=var_height+10
+    winmove,%title_ActiveWindow%,,%var_x%,%var_y%, %var_width%, %var_height%
+    return
+; 窗口调小
+CapsLock & -::
+    WinGetActiveStats,title_ActiveWindow,var_width,var_height,var_x,var_y
+    var_width:=var_width-10
+    var_height:=var_height-10
+    winmove,%title_ActiveWindow%,,%var_x%,%var_y%, %var_width%, %var_height%
+    return
+;鼠标
 Appskey & n::
     SendEvent {Blind}{LButton down}
     ;KeyWait n; Prevents keyboard auto-repeat from repeating the mouse click.
@@ -803,7 +777,44 @@ Appskey & m::
     ;KeyWait n; Prevents keyboard auto-repeat from repeating the mouse click.
     SendEvent {Blind}{RButton up}
     return
-; -----------------------------------------------------------------------------------  鼠标控制 end -----------------------------------------------------------
+
+
+Appskey & f::
+    if GetKeyState("Shift")
+    {
+        Send {Shift up}
+        RestoreCursors()
+    }
+    else
+    {
+        Send {Shift down}
+        SetSystemCursor("busy_l.cur")
+    }
+    sleep 300
+    return
+; 将Ctrl键设置为按下状态
+Appskey & g::
+    if GetKeyState("Ctrl")
+    {
+        Send {Ctrl up}
+        RestoreCursors()
+    }
+    else{
+        Send {Ctrl down}
+        SetSystemCursor("aero_link_xl.cur")
+    }
+    sleep 300
+    return
+;    GetKeyState 没带参数P或T, 则为逻辑状态，否则为物理状态
+;    GetKeyState, state, Lshift, P
+;    弹出消息
+;    msgBox %state%
+;CapsLock 映射成Esc
+$CapsLock::
+    SetCapsLockState, AlwaysOff
+    SendInput {ESC}
+
+    return
 ; 改变Capslock 状态
 Space & 1::
     if GetKeyState("Capslock", "T")
@@ -811,20 +822,12 @@ Space & 1::
     else
         SetCapsLockState,on
     return
-$CapsLock::
-    SetCapsLockState, AlwaysOff
-    SendInput {ESC}
-
-    ;百度输入法切成英文输入状态
-    IME_SET(0)  
-
-    return
 ;音量控制
-#F11::Send {Volume_Up 1}
+<#F11::Send {Volume_Up 1}
 ; Raise the master volume by 1 interval (typically 5%).
-#F12::Send {Volume_Down 3}
+<#F12::Send {Volume_Down 3}
 ; Lower the master volume by 3 intervals.这里如果不加参数的话就是默认5
-#F10::Send {Volume_Mute}
+<#F10::Send {Volume_Mute}
 Appskey & [::
     if GetKeyState("Ctrl", "P")
         send !{up}
@@ -837,12 +840,10 @@ Appskey & ]::
     else
         send !{right}
     return
-
 Appskey & 6::send !{6}
 Appskey & 7::send !{7}
 Appskey & 8::send !{8}
 Appskey & 9::send !{9}
-
 
 
 
@@ -853,7 +854,8 @@ Space & ,::
     {
         if GetKeyState("Shift")
         {
-            Send {Shift up} RestoreCursors()
+            Send {Shift up}
+            RestoreCursors()
         }
         else
         {
@@ -884,15 +886,13 @@ Space & ,::
     }
     return
 
-Appskey & Space::
-    IME_SET(0)    
-;IME_SetConvMode(0)
-    return
-^Space::
-    IME_SET(1)    
-;IME_SetConvMode(3)
-    return
-
+; 窗口布局
+Space & q::Send #{left}
+Space & o::Send #{right}
+Space & g::
+    Send #{up}
+    return 
+Space & b::Send #{down}
 
 
 ToBase(n,b){
@@ -933,7 +933,6 @@ Activate(t, p, type := "ahk_exe", sortType := "ASC")
         {
             WinShow
             WinActivate           
-            IME_GET(0)
             gosub Appskey & i
             return
         }
@@ -962,26 +961,12 @@ changeWin:
     {
         Sort,pidStr,F IntegerSort D,
     }
-    pidArr := StrSplit(pidStr,",")   
-
-    tipStr := ""
-    for index, value in pidArr {
-        WinGetTitle, this_title, ahk_id %value%
-        tipStr = %tipStr%%index%    %this_title%`n
-    }
-    tooltip %tipStr%
-    SetTimer, RemoveToolTip, -2000
-
+    pidArr := StrSplit(pidStr,",")
     temp := pidArr[winProcess]
     WinActivate,ahk_id %temp%
-    IME_GET(0)
     gosub Appskey & i
     winProcess := 0
     return
-
-RemoveToolTip:
-ToolTip
-return
 
 
 CapsLock & h::Activate("chrome.exe","chrome")
@@ -994,29 +979,24 @@ CapsLock & n::Activate("EVERYTHING", "everything")
 CapsLock & m::Activate("gvim.exe","gvim")
 CapsLock & u::Activate("et.exe","excel")
 CapsLock & o::Activate("wps.exe", "word")
-CapsLock & p::Activate("Kitematic.exe", "docker")
+;CapsLock & p::Activate("Kitematic.exe", "docker")
 ;#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
 ;CapsLock & o::Activate("TFoxMainFrm.UnicodeClass", "C:\Foxmail 7.2\Foxmail.exe")
 CapsLock & y::Activate("VirtualBox.exe", "D:\VirtualBox\VirtualBox.exe")
 
-
-
 ; ------------------   输入法 start  -------------------
-IME_SET(SetSts, WinTitle="A")    {
-    ControlGet,hwnd,HWND,,,%WinTitle%
-    if    (WinActive(WinTitle))    {
-        ptrSize := !A_PtrSize ? 4 : A_PtrSize
-        VarSetCapacity(stGTI, cbSize:=4+4+(PtrSize*6)+16, 0)
-        NumPut(cbSize, stGTI,  0, "UInt")   ;    DWORD   cbSize;
-        hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
-                 ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
-    }
-
-    return DllCall("SendMessage"
-          , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
-          , UInt, 0x0283  ;Message : WM_IME_CONTROL
-          ,  Int, 0x006   ;wParam  : IMC_SETOPENSTATUS
-          ,  Int, SetSts) ;lParam  : 0 or 1
+IME_SET(setSts, WinTitle="")
+{
+    Send ^``
+    ifEqual WinTitle,,  SetEnv,WinTitle,A
+    WinGet,hWnd,ID,%WinTitle%
+    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
+    ;Message : WM_IME_CONTROL  wParam:IMC_SETOPENSTATUS
+    DetectSave := A_DetectHiddenWindows
+    DetectHiddenWindows,ON
+    SendMessage 0x283, 0x006,setSts,,ahk_id %DefaultIMEWnd%
+    DetectHiddenWindows,%DetectSave%
+    Return ErrorLevel
 }
 
 
@@ -1046,6 +1026,28 @@ IME_GetConvMode(WinTitle="A")   {
           ,  Int, 0)      ;lParam  : 0
 }
 
-
+IME_SetConvMode(ConvMode,WinTitle="A")   {
+    send ^``
+    ControlGet,hwnd,HWND,,,%WinTitle%
+    if    (WinActive(WinTitle))    {
+        ptrSize := !A_PtrSize ? 4 : A_PtrSize
+        VarSetCapacity(stGTI, cbSize:=4+4+(PtrSize*6)+16, 0)
+        NumPut(cbSize, stGTI,  0, "UInt")   ;    DWORD   cbSize;
+        hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
+                 ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
+    }
+    msgbox %hwnd%
+    return DllCall("SendMessage"
+          , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
+          , UInt, 0x0283          ;Message : WM_IME_CONTROL
+          ,  Int, 0x004           ;wParam  : IMC_SETSENTENCEMODE
+          ,  Int, SentenceMode)   ;lParam  : SentenceMode
+}
+Appskey & Space::
+    IME_SetConvMode(1)
+    return
+^Space::
+    IME_SetConvMode(2)
+    return
 
 ; ------------------   输入法 end    -------------------
