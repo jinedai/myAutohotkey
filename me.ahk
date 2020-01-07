@@ -43,13 +43,12 @@ initShiftCtrlStatus(){
     if GetKeyState("Shift")
     {
         Send {Shift up}
-        RestoreCursors()
     }
     if GetKeyState("Ctrl")
     {
         Send {Ctrl up}
-        RestoreCursors()
     }
+    RestoreCursors()
 }
 
 Space & a::
@@ -153,13 +152,24 @@ Space & w::
 ; 关闭和添加标签页 
 Space & z:: 
     initShiftCtrlStatus() 
-    Send ^{w} 
+    Send {Ctrl down}
+    Send {w down}
+    Send {w up}
+    sleep 10
+    Send {Ctrl up}    
     return 
 Space & x:: 
     initShiftCtrlStatus() 
     Send ^{x} 
     return
-Space & t::Send ^{t}
+Space & t::
+    Send {Ctrl down} 
+    Send {t down} 
+    sleep 100
+    Send {Ctrl up} 
+    Send {t up}
+    return
+
 Space & n::
     if GetKeyState("Ctrl", "P")
     {
@@ -230,8 +240,24 @@ Space & o::
     }
     return
 
-Space & g::Send #{up}
-Space & b::Send #{down}
+;#UseHook
+Space & g::
+    Send {Lwin down} 
+    Send {up down} 
+    sleep 10 
+    Send {Lwin up} 
+    Send {up up} 
+    return
+
+Space & b::
+    Send {Lwin down} 
+    Send {down down} 
+    sleep 10 
+    Send {Lwin up} 
+    Send {down up} 
+    return
+
+;#UseHook off
 ; -----------------------------------------------------------------------------------  窗口移动 start ---------------------------------------------------------
 ; 上
 ^+!k::
@@ -814,10 +840,13 @@ Space & 1::
 $CapsLock::
     SetCapsLockState, AlwaysOff
     SendInput {ESC}
-
-    ;百度输入法切成英文输入状态
-    IME_SET(0)  
-
+    gosub Appskey & Space
+    tipStrGlobal := ""
+    processList("phpstorm64.exe")
+    processList("CabinetWClass",  "ahk_class")
+    processList("gvim.exe")
+    tooltip %tipStrGlobal%
+    SetTimer, RemoveToolTip, -2000
     return
 ;音量控制
 #F11::Send {Volume_Up 1}
@@ -853,7 +882,8 @@ Space & ,::
     {
         if GetKeyState("Shift")
         {
-            Send {Shift up} RestoreCursors()
+            Send {Shift up}
+            RestoreCursors()
         }
         else
         {
@@ -884,14 +914,6 @@ Space & ,::
     }
     return
 
-Appskey & Space::
-    IME_SET(0)    
-;IME_SetConvMode(0)
-    return
-^Space::
-    IME_SET(1)    
-;IME_SetConvMode(3)
-    return
 
 
 
@@ -906,6 +928,39 @@ IntegerSort(a1, a2)
     return a2 - a1  ; Sorts in ascending numeric order.  This method works only if the difference is never so large as to overflow a signed 64-bit integer.
 }
 ; 应用
+processList(t, type := "ahk_exe")
+{
+    WinGet,count,Count,%type% %t%
+    if count > 1
+    {
+        WinGet,id,List,%type% %t%
+        pidStr := ""
+        Loop,%id%
+        {        
+            pidStr := pidStr . "," . id%A_index%
+        }
+        pidStr := LTrim(pidStr,",")
+        if currentSort = ASC
+        {
+            Sort,pidStr,N D,
+        }
+        else
+        {
+            Sort,pidStr,F IntegerSort D,
+        }
+        pidArr := StrSplit(pidStr,",")   
+
+        global tipStrGlobal 
+        tipStrGlobal = %tipStrGlobal%%t%`n
+        for index, value in pidArr {
+            WinGetTitle, this_title, ahk_id %value%
+            tipStrGlobal = %tipStrGlobal%%index%    %this_title%`n
+        }
+        tipStrGlobal = %tipStrGlobal%`n`n
+    }
+    return
+}
+
 Activate(t, p, type := "ahk_exe", sortType := "ASC")
 {
     WinGet,count,Count,%type% %t%
@@ -933,7 +988,6 @@ Activate(t, p, type := "ahk_exe", sortType := "ASC")
         {
             WinShow
             WinActivate           
-            IME_GET(0)
             gosub Appskey & i
             return
         }
@@ -974,7 +1028,6 @@ changeWin:
 
     temp := pidArr[winProcess]
     WinActivate,ahk_id %temp%
-    IME_GET(0)
     gosub Appskey & i
     winProcess := 0
     return
@@ -993,7 +1046,7 @@ CapsLock & `;::Activate("CabinetWClass", "C:\Windows\explorer.exe", "ahk_class")
 CapsLock & n::Activate("EVERYTHING", "everything")
 CapsLock & m::Activate("gvim.exe","gvim")
 CapsLock & u::Activate("et.exe","excel")
-CapsLock & o::Activate("wps.exe", "word")
+CapsLock & o::Activate("WINWORD.exe", "word")
 CapsLock & p::Activate("Kitematic.exe", "docker")
 ;#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
 ;CapsLock & o::Activate("TFoxMainFrm.UnicodeClass", "C:\Foxmail 7.2\Foxmail.exe")
@@ -1002,7 +1055,21 @@ CapsLock & y::Activate("VirtualBox.exe", "D:\VirtualBox\VirtualBox.exe")
 
 
 ; ------------------   输入法 start  -------------------
+IME_GET(WinTitle="")
+{
+    ifEqual WinTitle,,  SetEnv,WinTitle,A
+    WinGet,hWnd,ID,%WinTitle%
+    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
+    ;Message : WM_IME_CONTROL  wParam:IMC_GETOPENSTATUS
+    DetectSave := A_DetectHiddenWindows
+    DetectHiddenWindows,ON
+    SendMessage 0x283, 0x005,0,,ahk_id %DefaultIMEWnd%
+    DetectHiddenWindows,%DetectSave%
+    Return ErrorLevel
+}
+
 IME_SET(SetSts, WinTitle="A")    {
+    send ^``
     ControlGet,hwnd,HWND,,,%WinTitle%
     if    (WinActive(WinTitle))    {
         ptrSize := !A_PtrSize ? 4 : A_PtrSize
@@ -1019,33 +1086,61 @@ IME_SET(SetSts, WinTitle="A")    {
           ,  Int, SetSts) ;lParam  : 0 or 1
 }
 
+Appskey & Space::
+    initShiftCtrlStatus()
+    IME_SET(0)    
+    imeState := IME_GET()
+    if imeState
+    {
+        sendInput {Shift down}
+        sleep 30
+        sendInput {Shift up}
+    }
+    return
+*^Space::
+;    BlockInput, On
+    initShiftCtrlStatus()
 
-IME_GET(WinTitle="")
-{
+;    send ^``
+    IME_SET(0)    
+    sleep 30
+    IME_SET(1)    
+
+    sleep 150
+    sendInput {Shift down}
+    sleep 30
+    sendInput {Shift up}
+;    BlockInput, Off
+    return
+
+;#4::
+;    IME_SetConvMode(3)
+;    msgBox aaa
+;    sleep 5000
+;    IME_SetConvMode(0)
+;    msgBox bbb
+;    return
+
+IME_SetConvMode(ConvMode,WinTitle="A")   {
+    Send {Ctrol down} 
+    Send {` down} 
+    sleep 10 
+    Send {Ctrol up} 
+    Send {` up} 
+;    send ^``
     ifEqual WinTitle,,  SetEnv,WinTitle,A
-    WinGet,hWnd,ID,%WinTitle%
-    DefaultIMEWnd := DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hWnd, Uint)
-    ;Message : WM_IME_CONTROL  wParam:IMC_GETOPENSTATUS
-    DetectSave := A_DetectHiddenWindows
-    DetectHiddenWindows,ON
-    SendMessage 0x283, 0x005,0,,ahk_id %DefaultIMEWnd%
-    DetectHiddenWindows,%DetectSave%
-    Return ErrorLevel
-}
-
-IME_GetConvMode(WinTitle="A")   {
-    ptrSize := !A_PtrSize ? 4 : A_PtrSize
-    VarSetCapacity(stGTI, cbSize:=4+4+(PtrSize*6)+16, 0)
-    NumPut(cbSize, stGTI,  0, "UInt")   ;    DWORD   cbSize;
-    hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
-             ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
+;    ControlGet,hwnd,HWND,,,%WinTitle%
+    if(WinActive(WinTitle)) {
+        ptrSize := !A_PtrSize ? 4 : A_PtrSize
+        VarSetCapacity(stGTI, cbSize:=4+4+(PtrSize*6)+16, 0)
+        NumPut(cbSize, stGTI,  0, "UInt")   ;    DWORD   cbSize;
+        hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
+                 ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
+    }
     return DllCall("SendMessage"
           , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
-          , UInt, 0x0283  ;Message : WM_IME_CONTROL
-          ,  Int, 0x001   ;wParam  : IMC_GETCONVERSIONMODE
-          ,  Int, 0)      ;lParam  : 0
+          , UInt, 0x0283      ;Message : WM_IME_CONTROL
+          ,  Int, 0x002       ;wParam  : IMC_SETCONVERSIONMODE
+          ,  Int, ConvMode)   ;lParam  : CONVERSIONMODE
 }
-
-
-
 ; ------------------   输入法 end    -------------------

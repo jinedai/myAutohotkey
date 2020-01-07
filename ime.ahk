@@ -1,63 +1,4 @@
-﻿/*****************************************************************************
-https://www6.atwiki.jp/eamat/pages/18.html
-  IME制御用 関数群 (IME.ahk)
-
-    グローバル変数 : なし
-    各関数の依存性 : なし(必要関数だけ切出してコピペでも使えます)
-
-    AutoHotkey:     L 1.1.08.01
-    Language:       Japanease
-    Platform:       NT系
-    Author:         eamat.      http://www6.atwiki.jp/eamat/
-*****************************************************************************
-履歴
-    2008.07.11 v1.0.47以降の 関数ライブラリスクリプト対応用にファイル名を変更
-    2008.12.10 コメント修正
-    2009.07.03 IME_GetConverting() 追加
-               Last Found Windowが有効にならない問題修正、他。
-    2009.12.03
-      ・IME 状態チェック GUIThreadInfo 利用版 入れ込み
-       （IEや秀丸8βでもIME状態が取れるように）
-        http://blechmusik.xrea.jp/resources/keyboard_layout/DvorakJ/inc/IME.ahk
-      ・Google日本語入力β 向け調整
-        入力モード 及び 変換モードは取れないっぽい
-        IME_GET/SET() と IME_GetConverting()は有効
-
-    2012.11.10 x64 & Unicode対応
-      実行環境を AHK_L U64に (本家およびA32,U32版との互換性は維持したつもり)
-      ・LongPtr対策：ポインタサイズをA_PtrSizeで見るようにした
-
-                ;==================================
-                ;  GUIThreadInfo
-                ;=================================
-                ; 構造体 GUITreadInfo
-                ;typedef struct tagGUITHREADINFO {(x86) (x64)
-                ;   DWORD   cbSize;                 0    0
-                ;   DWORD   flags;                  4    4   ※
-                ;   HWND    hwndActive;             8    8
-                ;   HWND    hwndFocus;             12    16  ※
-                ;   HWND    hwndCapture;           16    24
-                ;   HWND    hwndMenuOwner;         20    32
-                ;   HWND    hwndMoveSize;          24    40
-                ;   HWND    hwndCaret;             28    48
-                ;   RECT    rcCaret;               32    56
-                ;} GUITHREADINFO, *PGUITHREADINFO;
-
-      ・WinTitleパラメータが実質無意味化していたのを修正
-        対象がアクティブウィンドウの時のみ GetGUIThreadInfoを使い
-        そうでないときはControlハンドルを使用
-        一応バックグラウンドのIME情報も取れるように戻した
-        (取得ハンドルをWindowからControlに変えたことでブラウザ以外の大半の
-        アプリではバックグラウンドでも正しく値が取れるようになった。
-        ※ブラウザ系でもアクティブ窓のみでの使用なら問題ないと思う、たぶん)
-
-*/
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-; 動作確認用 内部ルーチン (マウスカーソル位置のウィンドウのIME状態を見る)
-;  単体起動時のテスト用なので削除しても問題なし
-_ImeAutoExecuteSample:
+﻿_ImeAutoExecuteSample:
     Hotkey,#1,_ImeGetTest
     Hotkey,#2,_ImeSetTest
     Hotkey,#3,_ImeIsConvertingTest
@@ -83,12 +24,11 @@ return
 ;--- IME Get Test [Win]+[2] ---
 _ImeSetTest:
     MsgBox,% "IME_SET           : "     . IME_SET(1,_mhwnd())             . "`n"
-          .  "IME_SetConvMode       : " . IME_SetConvMode(0x03)  . "`n"
-          .  "IME_SetSentenceMode   : " . IME_SetSentenceMode(1,_mhwnd()) . "`n"
+          .  "IME_SetConvMode       : " . IME_SetConvMode(0x00000010,_mhwnd())  . "`n"
+          .  "IME_SetSentenceMode   : " . IME_SetSentenceMode(0,_mhwnd()) . "`n"
 return
 _ImeSetTest2:
-    MsgBox,% "IME_SET           : "     . IME_SET(1,_mhwnd())             . "`n"
-          .  "IME_SetConvMode       : " . IME_SetConvMode(0x00)  . "`n"
+    MsgBox,% "IME_SetConvMode       : " . IME_SetConvMode(0x00000020, _mhwnd())  . "`n"
           .  "IME_SetSentenceMode   : " . IME_SetSentenceMode(0,_mhwnd()) . "`n"
 return
 
@@ -228,6 +168,12 @@ IME_GetConvMode(WinTitle="A")   {
 ;   戻り値          0:成功 / 0以外:失敗
 ;--------------------------------------------------------
 IME_SetConvMode(ConvMode,WinTitle="A")   {
+    Send {Ctrol down} 
+    Send {` down} 
+    sleep 10 
+    Send {Ctrol up} 
+    Send {` up} 
+    
     ControlGet,hwnd,HWND,,,%WinTitle%
     if  (WinActive(WinTitle))   {
         ptrSize := !A_PtrSize ? 4 : A_PtrSize
@@ -255,8 +201,6 @@ IME_SetConvMode(ConvMode,WinTitle="A")   {
 ; IME 変換モード取得
 ;   WinTitle="A"    対象Window
 ;   戻り値 MS-IME  0:無変換 1:人名/地名               8:一般    16:話し言葉
-;          ATOK系  0:固定   1:複合語           4:自動 8:連文節
-;          WXG4             1:複合語  2:無変換 4:自動 8:連文節
 ;------------------------------------------------------------------
 IME_GetSentenceMode(WinTitle="A")   {
     ControlGet,hwnd,HWND,,,%WinTitle%
@@ -284,6 +228,7 @@ IME_GetSentenceMode(WinTitle="A")   {
 ;   戻り値          0:成功 / 0以外:失敗
 ;-----------------------------------------------------------------
 IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
+    send ^``
     ControlGet,hwnd,HWND,,,%WinTitle%
     if  (WinActive(WinTitle))   {
         ptrSize := !A_PtrSize ? 4 : A_PtrSize
@@ -298,6 +243,7 @@ IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
           ,  Int, 0x004          ;wParam  : IMC_SETSENTENCEMODE
           ,  Int, SentenceMode)  ;lParam  : SentenceMode
 }
+
 
 
 ;---------------------------------------------------------------------------
@@ -322,6 +268,7 @@ IME_SetSentenceMode(SentenceMode,WinTitle="A")  {
 ;      のチェックを外す
 ;==========================================================================
 IME_GetConverting(WinTitle="A",ConvCls="",CandCls="") {
+    send ^``
 
    ;IME毎の 入力窓/候補窓Class一覧 ("|" 区切りで適当に足してけばOK)
     ConvCls .= (ConvCls ? "|" : "")                ;--- 入力窓 ---
