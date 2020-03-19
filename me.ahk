@@ -1,4 +1,4 @@
-if not A_IsAdmin
+﻿if not A_IsAdmin
 {
    Run *RunAs "%A_ScriptFullPath%"  ; Requires v1.0.92.01+
    ExitApp
@@ -201,9 +201,9 @@ Space & r::
     Send {Ctrl up}
     return
 ; 映射 F5
-Space & 5:: Send {F5}
+Space & 5:: SendInput  {F5}
 ;关闭窗口
-Space & 4:: Send !{F4}
+Space & 4:: SendInput !{F4}
 ; 切换简繁体
 Space & 2:: Send +{Space}
 ; 控制窗口的透明度
@@ -242,19 +242,35 @@ Space & o::
 
 ;#UseHook
 Space & g::
-    Send {Lwin down} 
-    Send {up down} 
-    sleep 10 
-    Send {Lwin up} 
-    Send {up up} 
+    ctlState := GetKeyState("Ctrl", "P")
+    if ctlState
+    {
+        WinMove, A,, 0, 0, a_screenwidth, a_screenheight/2
+    }
+    else
+    {
+        Send {Lwin down} 
+        Send {up down} 
+        sleep 10 
+        Send {Lwin up} 
+        Send {up up} 
+    }
     return
 
 Space & b::
-    Send {Lwin down} 
-    Send {down down} 
-    sleep 10 
-    Send {Lwin up} 
-    Send {down up} 
+    ctlState := GetKeyState("Ctrl", "P")
+    if ctlState
+    {
+        WinMove, A,, 0, a_screenheight/2, a_screenwidth, a_screenheight/2 - 50
+    }
+    else
+    {
+        Send {Lwin down} 
+        Send {down down} 
+        sleep 10 
+        Send {Lwin up} 
+        Send {down up} 
+    }
     return
 
 ;#UseHook off
@@ -845,8 +861,9 @@ $CapsLock::
     processList("phpstorm64.exe")
     processList("CabinetWClass",  "ahk_class")
     processList("gvim.exe")
-    tooltip %tipStrGlobal%
-    SetTimer, RemoveToolTip, -2000
+;    TrayTip ,, %tipStrGlobal%, 2
+    tooltip %tipStrGlobal%, 10, 0
+    SetTimer, RemoveToolTip, -500
     return
 ;音量控制
 #F11::Send {Volume_Up 1}
@@ -917,16 +934,16 @@ Space & ,::
 
 
 
-ToBase(n,b){
-    return (n < b ? "" : ToBase(n//b,b)) . ((d:=Mod(n,b)) < 10 ? d : Chr(d+55))
-}
-IntegerSort(a1, a2)
-{
-    a1 := ToBase(a1, 10)
-    a2 := ToBase(a2, 10)
+;ToBase(n,b){
+;    return (n < b ? "" : ToBase(n//b,b)) . ((d:=Mod(n,b)) < 10 ? d : Chr(d+55))
+;}
+;IntegerSort(a1, a2)
+;{
+;    a1 := ToBase(a1, 10)
+;    a2 := ToBase(a2, 10)
 ;    msgBox %a1% %a2%
-    return a2 - a1  ; Sorts in ascending numeric order.  This method works only if the difference is never so large as to overflow a signed 64-bit integer.
-}
+;    return a2 - a1  ; Sorts in ascending numeric order.  This method works only if the difference is never so large as to overflow a signed 64-bit integer.
+;}
 ; 应用
 processList(t, type := "ahk_exe")
 {
@@ -940,14 +957,7 @@ processList(t, type := "ahk_exe")
             pidStr := pidStr . "," . id%A_index%
         }
         pidStr := LTrim(pidStr,",")
-        if currentSort = ASC
-        {
-            Sort,pidStr,N D,
-        }
-        else
-        {
-            Sort,pidStr,F IntegerSort D,
-        }
+        Sort,pidStr,N D,
         pidArr := StrSplit(pidStr,",")   
 
         global tipStrGlobal 
@@ -961,12 +971,12 @@ processList(t, type := "ahk_exe")
     return
 }
 
-Activate(t, p, type := "ahk_exe", sortType := "ASC")
+Activate(t, p, type := "ahk_exe")
 {
     WinGet,count,Count,%type% %t%
     if count > 1
     {
-        global winProcess, currentWin := t, currentType := type, currentSort := sortType
+        global winProcess, currentWin := t, currentType := type
             
         if (winProcess > 0)
         {
@@ -1008,14 +1018,8 @@ changeWin:
         pidStr := pidStr . "," . id%A_index%
     }
     pidStr := LTrim(pidStr,",")
-    if currentSort = ASC
-    {
-        Sort,pidStr,N D,
-    }
-    else
-    {
-        Sort,pidStr,F IntegerSort D,
-    }
+    Sort,pidStr,N D,
+    ;Sort,pidStr,F IntegerSort D,
     pidArr := StrSplit(pidStr,",")   
 
     tipStr := ""
@@ -1038,7 +1042,7 @@ return
 
 
 CapsLock & h::Activate("chrome.exe","chrome")
-CapsLock & j::Activate("phpstorm64.exe","D:\PhpStorm 2019.1\bin\phpstorm64.exe", "ahk_exe", "DESC")
+CapsLock & j::Activate("phpstorm64.exe","D:\PhpStorm 2019.1\bin\phpstorm64.exe", "ahk_exe")
 CapsLock & k::Activate("navicat.exe","D:\Navicat 12 for MySQL\navicat.exe")
 ;CapsLock & !k::Activate("TMainForm","D:\heidisql\heidisql.exe")
 CapsLock & l::Activate("Evernote.exe","Evernote")
@@ -1048,9 +1052,9 @@ CapsLock & m::Activate("gvim.exe","gvim")
 CapsLock & u::Activate("et.exe","excel")
 CapsLock & o::Activate("WINWORD.exe", "word")
 CapsLock & p::Activate("Kitematic.exe", "docker")
-;#e::Activate("CabinetWClass", "C:\Windows\explorer.exe")
+;#e::Activate("CabinetWClass", "C:\Windows\explorer.exe") 
 ;CapsLock & o::Activate("TFoxMainFrm.UnicodeClass", "C:\Foxmail 7.2\Foxmail.exe")
-CapsLock & y::Activate("VirtualBox.exe", "D:\VirtualBox\VirtualBox.exe")
+CapsLock & y::Activate("Fiddler.exe", "fiddler")
 
 
 
@@ -1069,7 +1073,6 @@ IME_GET(WinTitle="")
 }
 
 IME_SET(SetSts, WinTitle="A")    {
-    send ^``
     ControlGet,hwnd,HWND,,,%WinTitle%
     if    (WinActive(WinTitle))    {
         ptrSize := !A_PtrSize ? 4 : A_PtrSize
@@ -1098,10 +1101,9 @@ Appskey & Space::
     }
     return
 *^Space::
+    send ^``
 ;    BlockInput, On
-    initShiftCtrlStatus()
 
-;    send ^``
     IME_SET(0)    
     sleep 30
     IME_SET(1)    
@@ -1112,35 +1114,3 @@ Appskey & Space::
     sendInput {Shift up}
 ;    BlockInput, Off
     return
-
-;#4::
-;    IME_SetConvMode(3)
-;    msgBox aaa
-;    sleep 5000
-;    IME_SetConvMode(0)
-;    msgBox bbb
-;    return
-
-IME_SetConvMode(ConvMode,WinTitle="A")   {
-    Send {Ctrol down} 
-    Send {` down} 
-    sleep 10 
-    Send {Ctrol up} 
-    Send {` up} 
-;    send ^``
-    ifEqual WinTitle,,  SetEnv,WinTitle,A
-;    ControlGet,hwnd,HWND,,,%WinTitle%
-    if(WinActive(WinTitle)) {
-        ptrSize := !A_PtrSize ? 4 : A_PtrSize
-        VarSetCapacity(stGTI, cbSize:=4+4+(PtrSize*6)+16, 0)
-        NumPut(cbSize, stGTI,  0, "UInt")   ;    DWORD   cbSize;
-        hwnd := DllCall("GetGUIThreadInfo", Uint,0, Uint,&stGTI)
-                 ? NumGet(stGTI,8+PtrSize,"UInt") : hwnd
-    }
-    return DllCall("SendMessage"
-          , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint,hwnd)
-          , UInt, 0x0283      ;Message : WM_IME_CONTROL
-          ,  Int, 0x002       ;wParam  : IMC_SETCONVERSIONMODE
-          ,  Int, ConvMode)   ;lParam  : CONVERSIONMODE
-}
-; ------------------   输入法 end    -------------------
