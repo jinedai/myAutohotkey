@@ -13,8 +13,6 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
 SCREENWIDTH2 := 1080
 SCREENHEIGHT2 := 1920
-barHeight := 50
-menuWidth := 62
 GUISTATUS := 0
 ; DetectHiddenWindows,on
 ; 禁掉CapsLock键
@@ -222,127 +220,141 @@ Space & 6::
 +Space::Send +{Space}
 
 $Appskey::SendInput {Appskey}
-;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 start  --------------------------------------------------------------
 <#Space::
     ;设置菜单热键及显示文本, 目前共42个
     IndexArray := []
     menuArray := ["A","S","D","F","G","H","J","K","L","Q","W","E","R","T","Y","U","I","O","P"]
-    tipArray  := ["M","N","B","V","C","X","Z"]
+    tipArray := ["M","N","B","V","C","X","Z"]
 
+    xSpace := 62
     XArray:=[]
     YArray:=[]
 
     loop % menuArray.Length()
     {
-        XArray.Push(70 + 20 + menuWidth * (a_index - 1))
-        YArray.Push(a_screenheight - barHeight)
+        XArray.Push(85 + xSpace * (a_index - 1))
+        YArray.Push(a_screenheight - 70)
         IndexArray.push(menuArray[a_index])
     }
     loop % tipArray.Length()
     {
-        XArray.Push(a_screenWidth - 297 - 30 * (a_index - 1))
-        YArray.Push(a_screenheight - barHeight)
+        XArray.Push(a_screenWidth - 305 - 30 * (a_index - 1))
+        YArray.Push(a_screenheight - 70)
         IndexArray.push(tipArray[a_index])
     }
 
-    menuTotal:= % XArray.Length()
+    menuIndex:= % XArray.Length()
     gosub Ever_StartHotKey
     gosub Ever_生成菜单
     return
+;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 start  --------------------------------------------------------------
 Ever_执行热键:
-    showMenu := True
     For index, value in IndexArray
         if (A_ThisHotkey = value){
-            if (index<=menuTotal){
+            if (index<=menuIndex){
                 xtip:=% XArray[index]
                 ytip:=% YArray[index]
                 if (index > menuArray.Length()){
                     CoordMode, Mouse, Screen
-                    MouseClick ,Right,xtip,ytip+barHeight/2,1
+                    MouseClick ,Right,xtip,ytip+35,1
                     CoordMode, Mouse, Window
-                    showMenu := False
                 }
                 else
                 {
                     CoordMode, Mouse, Screen
-                    MouseClick ,Left,xtip,ytip+barHeight/2,1
+                    MouseClick ,Left,xtip,ytip+35,1
                     CoordMode, Mouse, Window
                     WinGet, exeName, ProcessName, A
                     WinGet,count,Count, ahk_exe %exeName%
                     if(count = 1)
                     {
                         gosub Appskey & i
-                    }else{
-                        showMenu := False
                     }
                 }
             }
             break
         }
-    gosub Ever_CloseHotKey
-
-    if(showMenu){
-        Loop
-        {
-            if (A_Index > menuTotal){
-                break
-            }
-            Gui,%A_Index%: Color, 113250 ;设置菜单块背景颜色
-            Gui,%A_Index%: Show
-        }
-    }
     
+    SetTimer, Ever_移除菜单,1
+    gosub Ever_CloseHotKey
     return
 
+;优化想法：这些窗口第一次运行的时候循环一次保存起来，移除只是隐藏不真销毁。然后第二次以后要显示的时候直接显示即可。而且显示菜单块的时候要一起显示不要有那种一个接一个的感觉。
 Ever_生成菜单:
+    ;~ MsgBox % IndexArray.Length()
+;    CoordMode, Mouse, Screen
+;    CoordMode, Mouse, Window
+;    For index, value in IndexArray
     Loop
     {
-        if (A_Index > menuTotal){
+        if (A_Index > menuIndex){
             break
         }
         if(GUISTATUS = 0){
             xtip:=% XArray[A_Index]
             ytip:=% YArray[A_Index]
             Gui,%A_Index%:-Caption +AlwaysOnTop +ToolWindow  ;去标题栏任务栏alttab菜单项与置顶
+            Gui,%A_Index%: Color, E91E63 ;设置菜单块背景颜色
             Gui,%A_Index%: Font, s7 w550 cFFFFFF,A Verdana  ;设置下面的文本大小，字体
-            Gui,%A_Index%: Margin, x0, y0 ;设置字体控件距离左右上下距离
-            Gui,%A_Index%: Add, Text, w6 h9 Center, % IndexArray[A_Index]  ;设置文本，文本颜色
+            Gui,%A_Index%: Margin, x1, y1 ;设置字体控件距离左右上下距离
+            Gui,%A_Index%: Add, Text, w7 h7 Center , % IndexArray[A_Index]  ;设置文本，文本颜色
             Gui,%A_Index%: Show, X%xtip% Y%ytip%
         }
         else
         {
             Gui,%A_Index%: Show
         }
-        Gui,%A_Index%: Color, E91E63 ;设置菜单块背景颜色
     }
-    GUISTATUS = 1
+    if(GUISTATUS = 0){
+        GUISTATUS = 1
+    }
     return
 
 
 Ever_StartHotKey:
     Hotkey,Esc, Ever_执行热键, on
-    Hotkey,CapsLock, Ever_执行热键, on
     Loop
     {
-        if A_Index > %menuTotal%
+        if A_Index > %menuIndex%
         {
             break  ; 终止循环
         }
+        if A_Index < 1
+        {
+            continue ; 跳过后面并开始下一次重复
+        }
         Hotkey,% IndexArray[A_Index] ,Ever_执行热键,on  ;设置热键只对这个标签生效
+        ;~ Hotkey,% IndexArray[A_Index] ,Ever_执行热键2,on
     }
     return
 
  Ever_CloseHotKey:
-    Hotkey, Esc, off
-    Hotkey, CapsLock, $CapsLock, on
+    Hotkey, Esc, ,off
     Loop
     {
-        if A_Index > %menuTotal%
+        if A_Index > %menuIndex%
             break  ; 终止循环
+        if A_Index < 1
+        continue ; 跳过后面并开始下一次重复
         Hotkey,% IndexArray[A_Index] ,,,off
     }
     return
+
+Ever_移除菜单:
+    SetTimer, Ever_移除菜单, off
+    ;~ For index, value in array
+    Loop
+    {
+        if A_Index > %menuIndex%
+            break  ; 终止循环
+        if A_Index < 1
+            continue ; 跳过后面并开始下一次重复
+        ;~ Gui, %A_Index%:-Parent
+        Gui, %A_Index%:hide
+    }
+    return
 ;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 end  --------------------------------------------------------------
+
 ; 窗口布局
 Space & q::
     ctlState := GetKeyState("Ctrl", "P")
@@ -640,10 +652,10 @@ Appskey & `;::
         }
         else
         {
-            MouseMove a_screenwidth/2 - var_x_1, a_screenheight/4 - var_y_1
+            MouseMove a_screenwidth/4 -var_x_1, a_screenheight/2 - var_y_1
             vCount=1
         }
-        SetTimer, symmetryHMouse, 300
+        SetTimer, symmetryMouse, 300
     }else{
         if vCount>0
         {
@@ -652,12 +664,14 @@ Appskey & `;::
         }
         else
         {
-            MouseMove a_screenwidth/4 -var_x_1, a_screenheight/2 - var_y_1
+            MouseMove a_screenwidth/2 - var_x_1, a_screenheight/4 - var_y_1
             vCount=1
         }
-        SetTimer, symmetryMouse, 300
+        SetTimer, symmetryHMouse, 300
+
     }
     return
+
 symmetryMouse:
     SetTimer, symmetryMouse,off
     if vCount > 1
@@ -670,7 +684,6 @@ symmetryHMouse:
         MouseMove a_screenwidth/2 -var_x_1, a_screenheight*3/4 - var_y_1
     vCount=0
     return
-
 ;Control The Mouse
 Appskey & k::
     Loop
