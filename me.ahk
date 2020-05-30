@@ -13,8 +13,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 SetTitleMatchMode 2
 SCREENWIDTH2 := 1080
 SCREENHEIGHT2 := 1920
-barHeight := 50
-menuWidth := 62
+barHeight := 40
+menuWidth := 50
 GUISTATUS := 0
 ; DetectHiddenWindows,on
 ; 禁掉CapsLock键
@@ -234,13 +234,13 @@ $Appskey::SendInput {Appskey}
 
     loop % menuArray.Length()
     {
-        XArray.Push(70 + 20 + menuWidth * (a_index - 1))
+        XArray.Push(58 + 14 + menuWidth * (a_index - 1))
         YArray.Push(a_screenheight - barHeight)
         IndexArray.push(menuArray[a_index])
     }
     loop % tipArray.Length()
     {
-        XArray.Push(a_screenWidth - 297 - 30 * (a_index - 1))
+        XArray.Push(a_screenWidth - 258 - 24 * (a_index - 1))
         YArray.Push(a_screenheight - barHeight)
         IndexArray.push(tipArray[a_index])
     }
@@ -249,9 +249,38 @@ $Appskey::SendInput {Appskey}
     gosub Ever_StartHotKey
     gosub Ever_生成菜单
     return
+Ever_生成菜单:
+    Gui, Font, s17 bold cred
+    height := a_screenheight - barHeight
+    if(GUISTATUS = 0){
+        Gui,-Caption +AlwaysOnTop +ToolWindow  ;去标题栏任务栏alttab菜单项与置顶
+        Gui, Margin, x0, y0 ;设置字体控件距离左右上下距离
+        Loop
+        {
+            if (A_Index > menuTotal){
+                break
+            }
+            xtip:=% XArray[A_Index]
+            ytip:=% YArray[A_Index]
+            Gui, Add, Text, x%xtip% y0, % IndexArray[A_Index]  ;设置文本，文本颜色
+        }
+        Gui, Color, 113250 ;设置菜单块背景颜色
+        Gui +LastFound ; 指定 GUI 窗体为 last found window .
+        WinSet, TransColor, 113250
+        GUISTATUS = 1
+    }
+    else
+    {
+        For index, value in IndexArray
+            GuiControl, Font, %value%
+    }
+    Gui, Show, W%a_screenWidth% H25 X0 Y%height%
+    return
 Ever_执行热键:
-    showMenu := True
+    Gui, Font, s7 w7 cwhite
     For index, value in IndexArray
+    {
+        GuiControl, Font, %value%
         if (A_ThisHotkey = value){
             if (index<=menuTotal){
                 xtip:=% XArray[index]
@@ -260,7 +289,6 @@ Ever_执行热键:
                     CoordMode, Mouse, Screen
                     MouseClick ,Right,xtip,ytip+barHeight/2,1
                     CoordMode, Mouse, Window
-                    showMenu := False
                 }
                 else
                 {
@@ -272,53 +300,13 @@ Ever_执行热键:
                     if(count = 1)
                     {
                         gosub Appskey & i
-                    }else{
-                        showMenu := False
                     }
                 }
             }
-            break
         }
+    }
     gosub Ever_CloseHotKey
-
-    if(showMenu){
-        Loop
-        {
-            if (A_Index > menuTotal){
-                break
-            }
-            Gui,%A_Index%: Color, 113250 ;设置菜单块背景颜色
-            Gui,%A_Index%: Show
-        }
-    }
-    
     return
-
-Ever_生成菜单:
-    Loop
-    {
-        if (A_Index > menuTotal){
-            break
-        }
-        if(GUISTATUS = 0){
-            xtip:=% XArray[A_Index]
-            ytip:=% YArray[A_Index]
-            Gui,%A_Index%:-Caption +AlwaysOnTop +ToolWindow  ;去标题栏任务栏alttab菜单项与置顶
-            Gui,%A_Index%: Font, s7 w550 cFFFFFF,A Verdana  ;设置下面的文本大小，字体
-            Gui,%A_Index%: Margin, x0, y0 ;设置字体控件距离左右上下距离
-            Gui,%A_Index%: Add, Text, w6 h9 Center, % IndexArray[A_Index]  ;设置文本，文本颜色
-            Gui,%A_Index%: Show, X%xtip% Y%ytip%
-        }
-        else
-        {
-            Gui,%A_Index%: Show
-        }
-        Gui,%A_Index%: Color, E91E63 ;设置菜单块背景颜色
-    }
-    GUISTATUS = 1
-    return
-
-
 Ever_StartHotKey:
     Hotkey,Esc, Ever_执行热键, on
     Hotkey,CapsLock, Ever_执行热键, on
@@ -342,6 +330,7 @@ Ever_StartHotKey:
         Hotkey,% IndexArray[A_Index] ,,,off
     }
     return
+    
 ;-------------------------------------------------------------------------------------------- acejump跳转规则菜单块 end  --------------------------------------------------------------
 ; 窗口布局
 Space & q::
